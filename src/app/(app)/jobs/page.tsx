@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { AppNav } from "@/components/app-nav";
 import { PasteJobForm } from "@/components/paste-job-form";
 import { Badge } from "@/components/ui/badge";
+import { MatchButton } from "@/components/match-button";
 import {
   Card,
   CardContent,
@@ -65,8 +66,8 @@ export default async function JobsPage() {
                     </Badge>
                   </div>
                 </CardHeader>
-                {job.url && (
-                  <CardContent className="pt-0">
+                <CardContent className="pt-0">
+                  {job.url && (
                     <a
                       href={job.url}
                       target="_blank"
@@ -75,8 +76,9 @@ export default async function JobsPage() {
                     >
                       View posting
                     </a>
-                  </CardContent>
-                )}
+                  )}
+                  <MatchButton jobId={job.id} />
+                </CardContent>
               </Card>
             ))}
           </div>
