@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/db";
+import type { AppStatus } from "@prisma/client";
 
 export type AppUpdate = {
   id: string;
-  status: string;
+  status: AppStatus;
   updatedAt: Date;
   job: { title: string; company: string };
 };

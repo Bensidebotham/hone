@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,6 +23,7 @@ interface HealthTrendChartProps {
 }
 
 export function HealthTrendChart({ points }: HealthTrendChartProps) {
+  const gradientId = useId();
   return (
     <Card>
       <CardHeader>
@@ -36,7 +38,7 @@ export function HealthTrendChart({ points }: HealthTrendChartProps) {
           <ChartContainer config={chartConfig} className="h-[180px] w-full">
             <AreaChart data={points} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
               <defs>
-                <linearGradient id="compositeGradient" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="var(--color-composite)" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="var(--color-composite)" stopOpacity={0} />
                 </linearGradient>
@@ -59,13 +61,24 @@ export function HealthTrendChart({ points }: HealthTrendChartProps) {
                 tick={{ fontSize: 11 }}
                 tickCount={5}
               />
-              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(value) =>
+                      new Date(value + "T00:00:00").toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })
+                    }
+                  />
+                }
+              />
               <Area
                 type="monotone"
                 dataKey="composite"
                 stroke="var(--color-composite)"
                 strokeWidth={2}
-                fill="url(#compositeGradient)"
+                fill={`url(#${gradientId})`}
                 dot={false}
               />
             </AreaChart>

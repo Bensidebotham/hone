@@ -1,10 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import type { AppStatus } from "@prisma/client";
 import type { AppUpdate } from "@/lib/health/app-updates";
 
-const STATUS_VARIANT: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+const STATUS_VARIANT: Record<AppStatus, "default" | "secondary" | "destructive" | "outline"> = {
   offer: "default",
-  interviewing: "default",
+  interviewing: "secondary",
   applied: "secondary",
   saved: "outline",
   rejected: "destructive",

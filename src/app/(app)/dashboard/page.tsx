@@ -38,7 +38,9 @@ export default async function Dashboard() {
           <NewJobsCard jobs={summary.newJobs} />
 
           {/* App updates */}
-          <AppUpdatesCard updates={summary.appUpdates} />
+          <div className="md:col-span-2 xl:col-span-1">
+            <AppUpdatesCard updates={summary.appUpdates} />
+          </div>
 
           {/* Funnel — spans full row on xl */}
           <div className="md:col-span-2 xl:col-span-3">

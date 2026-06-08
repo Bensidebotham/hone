@@ -7,7 +7,6 @@ interface JobRow {
   company: string;
   location: string | null;
   url: string | null;
-  postedAt: Date | null;
 }
 
 interface NewJobsCardProps {
