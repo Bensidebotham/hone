@@ -17,17 +17,17 @@ interface AppUpdatesCardProps {
 
 export function AppUpdatesCard({ updates }: AppUpdatesCardProps) {
   return (
-    <Card>
+    <Card className="hover:shadow-sm transition-shadow">
       <CardHeader>
         <CardTitle>Recent Updates</CardTitle>
       </CardHeader>
       <CardContent>
         {updates.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No recent updates.</p>
+          <p className="text-sm text-muted-foreground py-2">No recent updates.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-1">
             {updates.map((update) => (
-              <li key={update.id} className="flex items-center justify-between gap-2 text-sm">
+              <li key={update.id} className="flex items-center justify-between gap-2 text-sm rounded-md px-2 py-1.5 -mx-2 hover:bg-muted/50 transition-colors">
                 <div className="min-w-0">
                   <span className="font-medium truncate block">{update.job.title}</span>
                   <span className="text-muted-foreground truncate block">{update.job.company}</span>

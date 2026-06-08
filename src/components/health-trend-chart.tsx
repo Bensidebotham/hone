@@ -25,7 +25,7 @@ interface HealthTrendChartProps {
 export function HealthTrendChart({ points }: HealthTrendChartProps) {
   const gradientId = useId();
   return (
-    <Card>
+    <Card className="hover:shadow-sm transition-shadow">
       <CardHeader>
         <CardTitle>Health Trend</CardTitle>
       </CardHeader>

@@ -35,7 +35,7 @@ function ScoreItem({
 
 export function HealthCard({ composite, components }: HealthCardProps) {
   return (
-    <Card>
+    <Card className="hover:shadow-sm transition-shadow">
       <CardHeader>
         <CardTitle>Profile Health</CardTitle>
       </CardHeader>

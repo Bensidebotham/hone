@@ -15,24 +15,24 @@ interface NewJobsCardProps {
 
 export function NewJobsCard({ jobs }: NewJobsCardProps) {
   return (
-    <Card>
+    <Card className="hover:shadow-sm transition-shadow">
       <CardHeader>
         <CardTitle>New Jobs Today</CardTitle>
       </CardHeader>
       <CardContent>
         {jobs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No new jobs today.</p>
+          <p className="text-sm text-muted-foreground py-2">No new jobs today.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-1">
             {jobs.map((job) => (
-              <li key={job.id} className="flex items-start justify-between gap-2 text-sm">
+              <li key={job.id} className="flex items-start justify-between gap-2 text-sm rounded-md px-2 py-1.5 -mx-2 hover:bg-muted/50 transition-colors">
                 <div className="min-w-0">
                   {job.url ? (
                     <Link
                       href={job.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="font-medium hover:underline truncate block"
+                      className="font-medium hover:underline underline-offset-4 truncate block"
                     >
                       {job.title}
                     </Link>

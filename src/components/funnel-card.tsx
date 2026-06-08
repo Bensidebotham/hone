@@ -16,7 +16,7 @@ interface FunnelCardProps {
 
 export function FunnelCard({ funnel }: FunnelCardProps) {
   return (
-    <Card>
+    <Card className="hover:shadow-sm transition-shadow">
       <CardHeader>
         <CardTitle>Application Funnel</CardTitle>
       </CardHeader>
