@@ -91,6 +91,55 @@ describe("fetchBoard ashby", () => {
       url: "https://jobs.ashbyhq.com/ramp/ashby-xyz-456",
     });
   });
+
+  it("maps compensationTierSummary to salary when present", async () => {
+    const fakeFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        jobs: [
+          {
+            id: "ashby-comp-789",
+            title: "Senior Engineer",
+            location: "Remote",
+            jobUrl: "https://jobs.ashbyhq.com/acme/ashby-comp-789",
+            descriptionPlain: "Build cool things.",
+            publishedAt: "2026-03-01T00:00:00Z",
+            compensation: {
+              compensationTierSummary: "$120K – $160K",
+            },
+          },
+        ],
+      }),
+    });
+    const jobs: NormalizedJob[] = await fetchBoard(
+      { provider: "ashby", slug: "acme", company: "Acme" },
+      { fetchFn: fakeFetch as any }
+    );
+    expect(jobs[0].salary).toBe("$120K – $160K");
+  });
+
+  it("falls back to parseSalary on description when no compensationTierSummary", async () => {
+    const fakeFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        jobs: [
+          {
+            id: "ashby-nocomp-111",
+            title: "Data Engineer",
+            location: "Austin, TX",
+            jobUrl: "https://jobs.ashbyhq.com/acme/ashby-nocomp-111",
+            descriptionPlain: "Pay range: $130,000 - $155,000 per year.",
+            publishedAt: "2026-04-01T00:00:00Z",
+          },
+        ],
+      }),
+    });
+    const jobs: NormalizedJob[] = await fetchBoard(
+      { provider: "ashby", slug: "acme", company: "Acme" },
+      { fetchFn: fakeFetch as any }
+    );
+    expect(jobs[0].salary).toBe("$130K–$155K");
+  });
 });
 
 describe("fetchBoard error handling", () => {

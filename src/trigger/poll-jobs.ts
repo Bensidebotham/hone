@@ -22,6 +22,7 @@ export const pollJobs = schedules.task({
             url: j.url,
             descriptionText: j.descriptionText,
             postedAt: j.postedAt,
+            salary: j.salary,
           },
           update: {
             title: j.title,
@@ -29,6 +30,7 @@ export const pollJobs = schedules.task({
             url: j.url,
             descriptionText: j.descriptionText,
             postedAt: j.postedAt,
+            salary: j.salary,
           },
         });
         upserts++;

@@ -1,4 +1,5 @@
 import type { BoardConfig } from "./boards.config";
+import { parseSalary } from "./salary";
 
 export interface NormalizedJob {
   externalId: string;
@@ -8,6 +9,7 @@ export interface NormalizedJob {
   url: string | null;
   descriptionText: string;
   postedAt: Date | null;
+  salary: string | null;
 }
 
 interface Opts {
@@ -32,15 +34,19 @@ export async function fetchBoard(
     );
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.jobs ?? []).map((j: any) => ({
-      externalId: `greenhouse:${cfg.slug}:${j.id}`,
-      company: cfg.company,
-      title: j.title,
-      location: j.location?.name ?? null,
-      url: j.absolute_url ?? null,
-      descriptionText: stripHtml(j.content ?? ""),
-      postedAt: j.updated_at ? new Date(j.updated_at) : null,
-    }));
+    return (data.jobs ?? []).map((j: any) => {
+      const descriptionText = stripHtml(j.content ?? "");
+      return {
+        externalId: `greenhouse:${cfg.slug}:${j.id}`,
+        company: cfg.company,
+        title: j.title,
+        location: j.location?.name ?? null,
+        url: j.absolute_url ?? null,
+        descriptionText,
+        postedAt: j.updated_at ? new Date(j.updated_at) : null,
+        salary: parseSalary(descriptionText),
+      };
+    });
   }
 
   if (cfg.provider === "lever") {
@@ -49,30 +55,43 @@ export async function fetchBoard(
     );
     if (!res.ok) return [];
     const data = await res.json();
-    return (data ?? []).map((j: any) => ({
-      externalId: `lever:${cfg.slug}:${j.id}`,
-      company: cfg.company,
-      title: j.text,
-      location: j.categories?.location ?? null,
-      url: j.hostedUrl ?? null,
-      descriptionText: stripHtml(j.descriptionPlain ?? j.description ?? ""),
-      postedAt: j.createdAt ? new Date(j.createdAt) : null,
-    }));
+    return (data ?? []).map((j: any) => {
+      const descriptionText = stripHtml(j.descriptionPlain ?? j.description ?? "");
+      return {
+        externalId: `lever:${cfg.slug}:${j.id}`,
+        company: cfg.company,
+        title: j.text,
+        location: j.categories?.location ?? null,
+        url: j.hostedUrl ?? null,
+        descriptionText,
+        postedAt: j.createdAt ? new Date(j.createdAt) : null,
+        salary: parseSalary(descriptionText),
+      };
+    });
   }
 
   // ashby
   const res = await f(
-    `https://api.ashbyhq.com/posting-api/job-board/${cfg.slug}?includeCompensation=false`
+    `https://api.ashbyhq.com/posting-api/job-board/${cfg.slug}?includeCompensation=true`
   );
   if (!res.ok) return [];
   const data = await res.json();
-  return (data.jobs ?? []).map((j: any) => ({
-    externalId: `ashby:${cfg.slug}:${j.id}`,
-    company: cfg.company,
-    title: j.title,
-    location: j.location ?? null,
-    url: j.jobUrl ?? null,
-    descriptionText: stripHtml(j.descriptionPlain ?? j.descriptionHtml ?? ""),
-    postedAt: j.publishedAt ? new Date(j.publishedAt) : null,
-  }));
+  return (data.jobs ?? []).map((j: any) => {
+    const descriptionText = stripHtml(
+      j.descriptionPlain ?? j.descriptionHtml ?? ""
+    );
+    // Prefer Ashby's human-readable compensation summary; fall back to description parsing.
+    const salary: string | null =
+      j.compensation?.compensationTierSummary ?? parseSalary(descriptionText);
+    return {
+      externalId: `ashby:${cfg.slug}:${j.id}`,
+      company: cfg.company,
+      title: j.title,
+      location: j.location ?? null,
+      url: j.jobUrl ?? null,
+      descriptionText,
+      postedAt: j.publishedAt ? new Date(j.publishedAt) : null,
+      salary,
+    };
+  });
 }
