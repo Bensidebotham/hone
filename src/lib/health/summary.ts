@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/db";
 import { computeComposite } from "./composite";
+import { getNewJobsToday } from "./new-jobs";
+import { getRecentAppUpdates } from "./app-updates";
+import { getHealthTrend } from "./health-trend";
 
 const STATUSES = ["saved", "applied", "interviewing", "offer", "rejected"] as const;
 type Status = (typeof STATUSES)[number];
@@ -13,10 +16,13 @@ async function latestScore(userId: string, type: "resume" | "linkedin" | "site")
 }
 
 export async function getDashboardSummary(userId: string) {
-  const [resume, linkedin, site] = await Promise.all([
+  const [resume, linkedin, site, newJobs, appUpdates, healthTrend] = await Promise.all([
     latestScore(userId, "resume"),
     latestScore(userId, "linkedin"),
     latestScore(userId, "site"),
+    getNewJobsToday(),
+    getRecentAppUpdates(userId),
+    getHealthTrend(userId),
   ]);
   const components = { resume, linkedin, site };
   const composite = computeComposite(components);
@@ -31,5 +37,5 @@ export async function getDashboardSummary(userId: string) {
     funnel[g.status as Status] = g._count?._all ?? 0;
   }
 
-  return { composite, components, funnel };
+  return { composite, components, funnel, newJobs, appUpdates, healthTrend };
 }
