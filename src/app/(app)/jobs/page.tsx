@@ -4,6 +4,7 @@ import { AppNav } from "@/components/app-nav";
 import { PasteJobForm } from "@/components/paste-job-form";
 import { Badge } from "@/components/ui/badge";
 import { MatchButton } from "@/components/match-button";
+import { SaveJobButton } from "@/components/save-job-button";
 import {
   Card,
   CardContent,
@@ -77,7 +78,10 @@ export default async function JobsPage() {
                       View posting
                     </a>
                   )}
-                  <MatchButton jobId={job.id} />
+                  <div className="flex items-center gap-2 mt-2">
+                    <MatchButton jobId={job.id} />
+                    <SaveJobButton jobId={job.id} />
+                  </div>
                 </CardContent>
               </Card>
             ))}
