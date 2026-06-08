@@ -38,6 +38,16 @@ describe("parseSalary", () => {
     expect(parseSalary("$120,000–$150,000")).toBe("$120K–$150K");
   });
 
+  it("matches non-round single figure $120,500", () => {
+    expect(parseSalary("Base pay: $120,500 per year")).toBe("$121K");
+  });
+
+  it("matches non-round range $120,500 - $150,750", () => {
+    expect(parseSalary("Salary: $120,500 - $150,750 annually")).toBe(
+      "$121K–$151K"
+    );
+  });
+
   // --- no-match cases ---
 
   it("returns null when no salary pattern is present", () => {

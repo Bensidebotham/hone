@@ -115,7 +115,7 @@ describe("fetchBoard ashby", () => {
       { provider: "ashby", slug: "acme", company: "Acme" },
       { fetchFn: fakeFetch as any }
     );
-    expect(jobs[0].salary).toBe("$120K – $160K");
+    expect(jobs[0].salary).toBe("$120K–$160K");
   });
 
   it("falls back to parseSalary on description when no compensationTierSummary", async () => {

@@ -81,8 +81,14 @@ export async function fetchBoard(
       j.descriptionPlain ?? j.descriptionHtml ?? ""
     );
     // Prefer Ashby's human-readable compensation summary; fall back to description parsing.
+    // Guard: compensationTierSummary may be a non-string (object/number) on some responses.
+    const tierSummary = j.compensation?.compensationTierSummary;
+    const summaryStr = typeof tierSummary === "string" ? tierSummary : null;
+    // Normalize the Ashby string through parseSalary so format matches our output (e.g.
+    // "$120K – $160K" → "$120K–$160K"); fall back to raw summary if parseSalary can't parse it.
     const salary: string | null =
-      j.compensation?.compensationTierSummary ?? parseSalary(descriptionText);
+      (summaryStr ? parseSalary(summaryStr) ?? summaryStr : null) ??
+      parseSalary(descriptionText);
     return {
       externalId: `ashby:${cfg.slug}:${j.id}`,
       company: cfg.company,

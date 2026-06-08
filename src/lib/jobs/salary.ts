@@ -18,8 +18,8 @@
 const SEP = "\\s*(?:–|-|to)\\s*";
 
 // Money token patterns (capture group = raw value string)
-//   $120,000  |  $120k  |  120k  (bare k form only, to avoid matching years/small nums)
-const MONEY_FULL = "\\$([0-9]{2,3}),?000"; // $120,000 or $120000
+//   $120,000  |  $120,500  |  $120k  |  120k  (bare k form only, to avoid matching years/small nums)
+const MONEY_FULL = "\\$([0-9]{2,3}),?([0-9]{3})"; // $120,000 / $120,500 / $120000
 const MONEY_K_DOLLAR = "\\$([0-9]+(?:\\.[0-9]+)?)k"; // $120k  $120.5k
 // Range: FULL–FULL  |  K–K  |  bare-k range
 // For bare-k, the common format is "120-150k" (k only on hi) or "120k-150k".
@@ -45,9 +45,20 @@ const COMBINED = new RegExp(
   "i"
 );
 
-/** Parse a raw numeric string (possibly with decimal) as a K-rounded number. */
+/**
+ * Parse a raw numeric string (possibly with decimal) as a K-rounded number.
+ * For bare-k and $k forms, raw is already in thousands (e.g. "120.5").
+ */
 function toK(raw: string): number {
   return Math.round(parseFloat(raw));
+}
+
+/**
+ * Convert a full-dollar match (thousands part + 3-digit remainder) to K.
+ * e.g. thousands="120", remainder="500" → round(120 + 500/1000) = round(120.5) = 121
+ */
+function fullToK(thousands: string, remainder: string): number {
+  return Math.round(parseInt(thousands, 10) + parseInt(remainder, 10) / 1000);
 }
 
 /** Format a K number as a display string like "$120K". */
@@ -64,44 +75,44 @@ export function parseSalary(text: string | null | undefined): string | null {
   if (!m) return null;
 
   // Determine which pattern matched by inspecting which capture groups are set.
-  // Group indices (1-indexed):
-  //   Range $full–$full:   g1, g2
-  //   Range $k–$k:         g3, g4
-  //   Range bare-k–bare-k: g5, g6
-  //   Single $full:        g7
-  //   Single $k:           g8
-  const [, g1, g2, g3, g4, g5, g6, g7, g8] = m;
+  // MONEY_FULL now captures 2 groups (thousands + 3-digit remainder), so group layout:
+  //   Range $full–$full:   g1(lo-thou), g2(lo-rem), g3(hi-thou), g4(hi-rem)
+  //   Range $k–$k:         g5, g6
+  //   Range bare-k–bare-k: g7, g8
+  //   Single $full:        g9(thou), g10(rem)
+  //   Single $k:           g11
+  const [, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11] = m;
 
-  if (g1 !== undefined && g2 !== undefined) {
-    // $120,000 – $150,000
-    const lo = toK(g1);
-    const hi = toK(g2);
-    if (lo < MIN_K) return null;
-    return `${fmtK(lo)}–${fmtK(hi)}`;
-  }
-  if (g3 !== undefined && g4 !== undefined) {
-    // $120k – $150k
-    const lo = toK(g3);
-    const hi = toK(g4);
+  if (g1 !== undefined && g2 !== undefined && g3 !== undefined && g4 !== undefined) {
+    // $120,000 – $150,000  or  $120,500 – $150,750
+    const lo = fullToK(g1, g2);
+    const hi = fullToK(g3, g4);
     if (lo < MIN_K) return null;
     return `${fmtK(lo)}–${fmtK(hi)}`;
   }
   if (g5 !== undefined && g6 !== undefined) {
-    // 120k – 150k (bare)
+    // $120k – $150k
     const lo = toK(g5);
     const hi = toK(g6);
     if (lo < MIN_K) return null;
     return `${fmtK(lo)}–${fmtK(hi)}`;
   }
-  if (g7 !== undefined) {
-    // $150,000
-    const k = toK(g7);
+  if (g7 !== undefined && g8 !== undefined) {
+    // 120k – 150k (bare)
+    const lo = toK(g7);
+    const hi = toK(g8);
+    if (lo < MIN_K) return null;
+    return `${fmtK(lo)}–${fmtK(hi)}`;
+  }
+  if (g9 !== undefined && g10 !== undefined) {
+    // $150,000  or  $120,500
+    const k = fullToK(g9, g10);
     if (k < MIN_K) return null;
     return fmtK(k);
   }
-  if (g8 !== undefined) {
+  if (g11 !== undefined) {
     // $150k
-    const k = toK(g8);
+    const k = toK(g11);
     if (k < MIN_K) return null;
     return fmtK(k);
   }
