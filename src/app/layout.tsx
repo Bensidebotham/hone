@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Job Application Suite",
-  description: "AI-powered job search and application tracker",
+  title: "Hone",
+  description: "Hone — AI-powered resume, LinkedIn & site optimization, job matching, and application tracking.",
 };
 
 export default function RootLayout({

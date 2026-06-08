@@ -7,7 +7,7 @@ export default function Home() {
       <main className="flex flex-col items-center gap-8 text-center max-w-md px-6">
         <div className="flex flex-col gap-3">
           <h1 className="text-4xl font-bold tracking-tight text-foreground">
-            Job Application Suite
+            Hone
           </h1>
           <p className="text-lg text-muted-foreground">
             AI-powered tools to land your next role faster.
