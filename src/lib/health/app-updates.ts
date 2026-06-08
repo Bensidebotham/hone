@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/db";
 
-export async function getRecentAppUpdates(userId: string, limit = 10) {
+export type AppUpdate = {
+  id: string;
+  status: string;
+  updatedAt: Date;
+  job: { title: string; company: string };
+};
+
+export async function getRecentAppUpdates(userId: string, limit = 10): Promise<AppUpdate[]> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const rows = await prisma.application.findMany({
