@@ -19,11 +19,3 @@ export async function toggleSavedJob(jobId: string): Promise<void> {
   }
   revalidatePath("/jobs");
 }
-
-export async function listSavedJobIds(userId: string): Promise<Set<string>> {
-  const rows = await prisma.userSavedJob.findMany({
-    where: { userId },
-    select: { jobId: true },
-  });
-  return new Set(rows.map((r) => r.jobId));
-}

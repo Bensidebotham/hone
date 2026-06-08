@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildJobWhere } from "@/lib/jobs/filters";
-import { listSavedJobIds } from "@/lib/jobs/saved";
+import { listSavedJobIds } from "@/lib/jobs/saved-queries";
 import { parseSalary } from "@/lib/jobs/salary";
 import { AppNav } from "@/components/app-nav";
 import { PasteJobForm } from "@/components/paste-job-form";
@@ -58,7 +58,9 @@ export default async function JobsPage({
 
         {jobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No jobs match your filters.
+            {Object.keys(params).length > 0
+              ? "No jobs match your filters."
+              : "No jobs yet — paste one above or wait for the ATS sync to run."}
           </p>
         ) : (
           <div className="flex flex-col gap-3">
