@@ -14,7 +14,7 @@ import type { HealthTrendPoint } from "@/lib/health/health-trend";
 const chartConfig = {
   composite: {
     label: "Health",
-    color: "hsl(var(--primary))",
+    color: "var(--primary)",
   },
 } satisfies ChartConfig;
 
