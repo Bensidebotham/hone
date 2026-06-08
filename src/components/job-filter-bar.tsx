@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export function JobFilterBar() {
-  const searchParams = useSearchParams();
+  const sp = useSearchParams();
   const router = useRouter();
 
-  const [location, setLocation] = useState(searchParams.get("location") ?? "");
-  const [company, setCompany] = useState(searchParams.get("company") ?? "");
-  const [remote, setRemote] = useState(searchParams.get("remote") === "true");
-  const [postedWithin, setPostedWithin] = useState(searchParams.get("postedWithin") ?? "");
+  const [location, setLocation] = useState(sp.get("location") ?? "");
+  const [company, setCompany] = useState(sp.get("company") ?? "");
+  const [remote, setRemote] = useState(sp.get("remote") === "true");
+  const [postedWithin, setPostedWithin] = useState(sp.get("postedWithin") ?? "");
+
+  // Re-sync inputs when the URL changes (browser back/forward navigation)
+  useEffect(() => {
+    setLocation(sp.get("location") ?? "");
+    setCompany(sp.get("company") ?? "");
+    setRemote(sp.get("remote") === "true");
+    setPostedWithin(sp.get("postedWithin") ?? "");
+  }, [sp]);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -72,7 +80,7 @@ export function JobFilterBar() {
           id="filter-posted-within"
           value={postedWithin}
           onChange={(e) => setPostedWithin(e.target.value)}
-          className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 transition-colors"
+          className="h-8 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 transition-colors dark:bg-input/30 md:text-sm"
         >
           <option value="">Any time</option>
           <option value="1d">Past day</option>
@@ -81,12 +89,8 @@ export function JobFilterBar() {
         </select>
       </div>
 
-      {/* Remote only */}
-      <div className="flex flex-col gap-1">
-        {/* Spacer to align with other labelled fields */}
-        <span className="text-xs font-medium text-transparent select-none" aria-hidden="true">
-          &nbsp;
-        </span>
+      {/* Remote only — pt-5 offsets the label height to align with labelled inputs */}
+      <div className="pt-5">
         <label className="flex h-8 items-center gap-2 cursor-pointer text-sm">
           <input
             type="checkbox"
@@ -98,11 +102,8 @@ export function JobFilterBar() {
         </label>
       </div>
 
-      {/* Actions */}
-      <div className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-transparent select-none" aria-hidden="true">
-          &nbsp;
-        </span>
+      {/* Actions — pt-5 offsets the label height to align with labelled inputs */}
+      <div className="pt-5">
         <div className="flex items-center gap-2">
           <Button type="submit" size="sm">
             Apply filters

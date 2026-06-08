@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { MatchButton } from "@/components/match-button";
@@ -18,13 +18,12 @@ export type JobCardData = {
 };
 
 export function JobCard({ job, saved }: { job: JobCardData; saved: boolean }) {
-  const [isSaved, setIsSaved] = useState(saved);
-  const [pending, start] = useTransition();
+  const [isSaved, setOptimisticSaved] = useOptimistic(saved);
+  const [pending, startTransition] = useTransition();
 
   function handleBookmark() {
-    // Optimistic toggle
-    setIsSaved((prev) => !prev);
-    start(async () => {
+    startTransition(async () => {
+      setOptimisticSaved(!isSaved);
       await toggleSavedJob(job.id);
     });
   }
