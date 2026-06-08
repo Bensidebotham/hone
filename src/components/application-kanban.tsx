@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useCallback } from "react";
+import { useState, useTransition, useEffect, useCallback, useRef } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -15,6 +15,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ApplicationCard } from "@/components/application-card";
 import { updateStatus } from "@/lib/applications/actions";
@@ -60,12 +61,10 @@ function KanbanColumn({ status, label, apps }: KanbanColumnProps) {
       >
         <div
           ref={setNodeRef}
-          className={[
+          className={cn(
             "flex flex-col gap-2 rounded-lg transition-colors min-h-[60px]",
-            isOver ? "bg-accent/40" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
+            isOver && "bg-accent/40"
+          )}
         >
           {apps.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border p-4 text-center">
@@ -90,14 +89,16 @@ export function ApplicationKanban({ applications }: ApplicationKanbanProps) {
   const [grouped, setGrouped] = useState(() => groupByStatus(applications));
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const pendingRef = useRef(0);
 
-  // Re-sync when the server revalidates and sends fresh props
+  // Re-sync when the server revalidates and sends fresh props,
+  // but skip while a drag transition is in flight to avoid clobbering optimistic state.
   useEffect(() => {
-    setGrouped(groupByStatus(applications));
+    if (pendingRef.current === 0) setGrouped(groupByStatus(applications));
   }, [applications]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -122,13 +123,14 @@ export function ApplicationKanban({ applications }: ApplicationKanbanProps) {
       const alreadyThere = grouped[toStatus].some((a) => a.id === appId);
       if (alreadyThere) return;
 
-      // Snapshot for revert
+      // Snapshot for revert (captured synchronously before the optimistic update)
       const snapshot = grouped;
 
-      // Optimistic update
-      setGrouped(moveApplication(grouped, appId, toStatus));
+      // Optimistic update (functional form to avoid stale closure)
+      setGrouped((prev) => moveApplication(prev, appId, toStatus));
       setError(null);
 
+      pendingRef.current++;
       startTransition(async () => {
         try {
           await updateStatus(appId, toStatus);
@@ -136,16 +138,22 @@ export function ApplicationKanban({ applications }: ApplicationKanbanProps) {
           // Revert on failure
           setGrouped(snapshot);
           setError("Failed to save the status change. Please try again.");
+        } finally {
+          pendingRef.current--;
         }
       });
     },
-    [grouped, startTransition]
+    [grouped]
   );
 
   return (
     <TooltipProvider>
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="mb-4 flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive"
+        >
           <span>{error}</span>
           <button
             onClick={() => setError(null)}
