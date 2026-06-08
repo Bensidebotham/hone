@@ -47,7 +47,7 @@ describe("buildJobWhere", () => {
     const gte = dateCondition.postedAt.gte as Date;
     expect(gte).toBeInstanceOf(Date);
 
-    // gte should be approximately now - 7 days, within +-8 days window
+    // gte should be approximately now - 7 days, within a ±1 day window around 7-days-ago
     const eightDaysAgo = new Date(before.getTime() - 8 * 24 * 60 * 60 * 1000);
     const sixDaysAgo = new Date(after.getTime() - 6 * 24 * 60 * 60 * 1000);
     expect(gte.getTime()).toBeGreaterThan(eightDaysAgo.getTime());
@@ -75,6 +75,12 @@ describe("buildJobWhere", () => {
 
   it("ignores invalid postedWithin value 'abc' — no postedAt filter, no AND", () => {
     const result = buildJobWhere({ postedWithin: "abc" }, "u1");
+    expect(result).toEqual({ OR: BASE_OR });
+    expect(result).not.toHaveProperty("AND");
+  });
+
+  it("ignores postedWithin '0d' — no postedAt filter, no AND", () => {
+    const result = buildJobWhere({ postedWithin: "0d" }, "u1");
     expect(result).toEqual({ OR: BASE_OR });
     expect(result).not.toHaveProperty("AND");
   });

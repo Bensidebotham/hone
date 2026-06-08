@@ -1,19 +1,15 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-const postedWithinPattern = /^\d+d$/;
+const postedWithinPattern = /^[1-9]\d*d$/;
 
 const FilterParams = z.object({
   location: z.string().optional(),
   company: z.string().optional(),
   remote: z
-    .union([z.boolean(), z.string()])
+    .string()
     .optional()
-    .transform((v) => {
-      if (v === undefined) return undefined;
-      if (typeof v === "boolean") return v;
-      return v === "true";
-    }),
+    .transform((v) => (v === undefined ? undefined : v === "true")),
   postedWithin: z
     .string()
     .optional()
@@ -34,8 +30,7 @@ export function buildJobWhere(
   }
 
   const parsed = FilterParams.safeParse(flat);
-  type Params = Partial<z.infer<typeof FilterParams>>;
-  const params: Params = parsed.success ? parsed.data : {};
+  const params = parsed.success ? parsed.data : ({} as z.infer<typeof FilterParams>);
 
   const base: Prisma.JobWhereInput = {
     OR: [{ source: "ats" }, { userId }],
