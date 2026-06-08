@@ -8,6 +8,7 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./vitest.setup.ts"],
+    clearMocks: true,
     exclude: ["**/node_modules/**", "**/e2e/**"],
   },
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },

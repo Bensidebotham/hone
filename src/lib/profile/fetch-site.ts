@@ -81,16 +81,16 @@ function stripHtml(raw: string): string {
 }
 
 /**
- * Fetch the given URL, apply security guards, strip HTML, and return plain text.
+ * Synchronous guard that validates a URL is allowed for site fetching.
  *
- * @throws Error with a descriptive message on any guard violation or HTTP error.
+ * Checks:
+ *  1. Must be a parseable URL with http: or https: scheme.
+ *  2. Hostname must not be in the blocklist (ToS-sensitive / paste-only sites).
+ *  3. Hostname must not be a loopback, private, or link-local address (SSRF guard).
+ *
+ * @throws Error with a descriptive message on any guard violation.
  */
-export async function fetchSiteText(
-  url: string,
-  opts: FetchSiteOpts = {}
-): Promise<string> {
-  const { fetchFn = fetch } = opts;
-
+export function assertAllowedSiteUrl(url: string): void {
   // --- 1. Parse & scheme check -------------------------------------------
   let parsed: URL;
   try {
@@ -128,6 +128,21 @@ export async function fetchSiteText(
       `Fetching private/internal IP addresses is not allowed: ${hostname}`
     );
   }
+}
+
+/**
+ * Fetch the given URL, apply security guards, strip HTML, and return plain text.
+ *
+ * @throws Error with a descriptive message on any guard violation or HTTP error.
+ */
+export async function fetchSiteText(
+  url: string,
+  opts: FetchSiteOpts = {}
+): Promise<string> {
+  const { fetchFn = fetch } = opts;
+
+  // Run all synchronous guards (scheme, blocklist, SSRF) up front
+  assertAllowedSiteUrl(url);
 
   // --- 4. Fetch ------------------------------------------------------------
   const response = await fetchFn(url, {
