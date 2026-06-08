@@ -98,10 +98,11 @@ export function ApplicationCard({ app }: { app: AppWithJob }) {
             </CardHeader>
             <CardContent className="flex flex-col gap-3 pt-0">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label htmlFor={`status-${app.id}`} className="text-xs font-medium text-muted-foreground">
                   Status
                 </label>
                 <select
+                  id={`status-${app.id}`}
                   defaultValue={app.status}
                   onChange={handleStatusChange}
                   disabled={isPending}
@@ -115,10 +116,11 @@ export function ApplicationCard({ app }: { app: AppWithJob }) {
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label htmlFor={`notes-${app.id}`} className="text-xs font-medium text-muted-foreground">
                   Notes
                 </label>
                 <Textarea
+                  id={`notes-${app.id}`}
                   value={notesValue}
                   onChange={(e) => setNotesValue(e.target.value)}
                   onBlur={handleNotesBlur}
