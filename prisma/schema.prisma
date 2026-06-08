@@ -19,6 +19,7 @@ model User {
   jobs          Job[]
   applications  Application[]
   healthScores  HealthScore[]
+  savedJobs     UserSavedJob[]
   createdAt     DateTime      @default(now())
 }
 
@@ -117,12 +118,14 @@ model Job {
   title           String
   location        String?
   url             String?
+  salary          String?
   descriptionText String
   postedAt        DateTime?
   createdAt       DateTime      @default(now())
   user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   matches         Match[]
   applications    Application[]
+  savedJobs       UserSavedJob[]
 
   @@unique([source, externalId])
 }
@@ -170,4 +173,14 @@ model HealthScore {
   composite Int
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserSavedJob {
+  userId  String
+  jobId   String
+  savedAt DateTime @default(now())
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@id([userId, jobId])
 }
