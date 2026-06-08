@@ -186,4 +186,19 @@ describe("moveApplication", () => {
     expect(after.saved).not.toBe(before.saved);
     expect(after.applied).not.toBe(before.applied);
   });
+
+  it("updates the moved app's status to the target column status", () => {
+    const before = baseGrouped();
+    const after = moveApplication(before, "a1", "applied");
+    const movedApp = after.applied.find((a) => a.id === "a1");
+    expect(movedApp?.status).toBe("applied");
+  });
+
+  it("does not mutate the original app object's status", () => {
+    const before = baseGrouped();
+    const originalApp = before.saved.find((a) => a.id === "a1")!;
+    const originalStatus = originalApp.status;
+    moveApplication(before, "a1", "applied");
+    expect(originalApp.status).toBe(originalStatus);
+  });
 });

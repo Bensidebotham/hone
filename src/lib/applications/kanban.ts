@@ -74,6 +74,6 @@ export function moveApplication(
   return {
     ...grouped,
     [from]: grouped[from].filter((a) => a.id !== appId),
-    [toStatus]: [...grouped[toStatus], movedApp],
+    [toStatus]: [...grouped[toStatus], { ...movedApp, status: toStatus }],
   };
 }

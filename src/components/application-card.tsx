@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useState } from "react";
+import { useTransition, useState, useEffect } from "react";
 import { Prisma } from "@prisma/client";
 import {
   Card,
@@ -31,7 +31,10 @@ type AppStatus = (typeof STATUS_OPTIONS)[number]["value"];
 
 export function ApplicationCard({ app }: { app: AppWithJob }) {
   const [isPending, startTransition] = useTransition();
+  const [status, setStatus] = useState(app.status);
   const [notesValue, setNotesValue] = useState(app.notes ?? "");
+
+  useEffect(() => { setStatus(app.status); }, [app.status]);
 
   const {
     attributes,
@@ -55,6 +58,7 @@ export function ApplicationCard({ app }: { app: AppWithJob }) {
 
   function handleStatusChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const newStatus = e.target.value as AppStatus;
+    setStatus(newStatus);
     startTransition(() => {
       updateStatus(app.id, newStatus);
     });
@@ -103,7 +107,7 @@ export function ApplicationCard({ app }: { app: AppWithJob }) {
                 </label>
                 <select
                   id={`status-${app.id}`}
-                  defaultValue={app.status}
+                  value={status}
                   onChange={handleStatusChange}
                   disabled={isPending}
                   className="rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
