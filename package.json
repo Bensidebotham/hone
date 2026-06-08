@@ -11,10 +11,14 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@prisma/client": "^7.8.0",
     "next": "16.2.7",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.4.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@prisma/engines", "prisma"]
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
@@ -26,6 +30,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.2",
     "jsdom": "^29.1.1",
+    "prisma": "^7.8.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.8"
