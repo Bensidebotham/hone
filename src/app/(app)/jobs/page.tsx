@@ -1,10 +1,12 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { buildJobWhere } from "@/lib/jobs/filters";
+import { listSavedJobIds } from "@/lib/jobs/saved";
+import { parseSalary } from "@/lib/jobs/salary";
 import { AppNav } from "@/components/app-nav";
 import { PasteJobForm } from "@/components/paste-job-form";
-import { Badge } from "@/components/ui/badge";
-import { MatchButton } from "@/components/match-button";
-import { SaveJobButton } from "@/components/save-job-button";
+import { JobFilterBar } from "@/components/job-filter-bar";
+import { JobCard } from "@/components/job-card";
 import {
   Card,
   CardContent,
@@ -15,13 +17,18 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function JobsPage() {
+export default async function JobsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
   const user = await requireUser();
-  const jobs = await prisma.job.findMany({
-    where: { OR: [{ source: "ats" }, { userId: user.id }] },
-    orderBy: { postedAt: "desc" },
-    take: 100,
-  });
+  const where = buildJobWhere(params, user.id);
+  const [jobs, savedIds] = await Promise.all([
+    prisma.job.findMany({ where, orderBy: { postedAt: "desc" }, take: 100 }),
+    listSavedJobIds(user.id),
+  ]);
 
   return (
     <div className="flex min-h-screen">
@@ -45,45 +52,30 @@ export default async function JobsPage() {
           </CardContent>
         </Card>
 
+        <div className="mb-6">
+          <JobFilterBar />
+        </div>
+
         {jobs.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            No jobs yet — paste one above or wait for the ATS sync to run.
+            No jobs match your filters.
           </p>
         ) : (
           <div className="flex flex-col gap-3">
             {jobs.map((job) => (
-              <Card key={job.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex flex-col gap-0.5">
-                      <CardTitle className="text-base">{job.title}</CardTitle>
-                      <CardDescription>
-                        {job.company}
-                        {job.location ? ` · ${job.location}` : ""}
-                      </CardDescription>
-                    </div>
-                    <Badge variant={job.source === "ats" ? "secondary" : "outline"}>
-                      {job.source === "ats" ? "ATS" : "Pasted"}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  {job.url && (
-                    <a
-                      href={job.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary underline-offset-4 hover:underline"
-                    >
-                      View posting
-                    </a>
-                  )}
-                  <div className="flex items-center gap-2 mt-2">
-                    <MatchButton jobId={job.id} />
-                    <SaveJobButton jobId={job.id} />
-                  </div>
-                </CardContent>
-              </Card>
+              <JobCard
+                key={job.id}
+                job={{
+                  id: job.id,
+                  title: job.title,
+                  company: job.company,
+                  location: job.location,
+                  url: job.url,
+                  source: job.source,
+                  salary: job.salary ?? parseSalary(job.descriptionText),
+                }}
+                saved={savedIds.has(job.id)}
+              />
             ))}
           </div>
         )}
