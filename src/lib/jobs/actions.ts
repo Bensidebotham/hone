@@ -3,6 +3,7 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildJobWhere } from "@/lib/jobs/filters";
+import { listSavedJobIds } from "@/lib/jobs/saved-queries";
 import { JOBS_PAGE_SIZE, jobOrderBy, type JobListRow } from "@/lib/jobs/constants";
 
 export async function loadMoreJobs(
@@ -10,7 +11,9 @@ export async function loadMoreJobs(
   cursorId: string
 ): Promise<{ jobs: JobListRow[]; nextCursor: string | null }> {
   const user = await requireUser();
-  const where = buildJobWhere(params, user.id);
+  const where = params.saved === "true"
+    ? { id: { in: [...await listSavedJobIds(user.id)] } }
+    : buildJobWhere(params, user.id);
   const jobs = await prisma.job.findMany({
     where,
     orderBy: jobOrderBy(params.sort),

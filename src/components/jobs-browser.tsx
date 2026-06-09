@@ -31,11 +31,13 @@ export function JobsBrowser({
   initialCursor,
   savedIds,
   hasFilters,
+  savedView,
 }: {
   initialJobs: BrowserJob[];
   initialCursor: string | null;
   savedIds: string[];
   hasFilters: boolean;
+  savedView?: boolean;
 }) {
   const sp = useSearchParams();
   const router = useRouter();
@@ -73,6 +75,9 @@ export function JobsBrowser({
   }
 
   if (jobs.length === 0) {
+    if (savedView) {
+      return <EmptyState title="No saved jobs yet" message="Tap the ☆ on a job to bookmark it and find it here." />;
+    }
     return hasFilters ? (
       <EmptyState title="No jobs match your filters" message="Try widening or clearing your filters." />
     ) : (
