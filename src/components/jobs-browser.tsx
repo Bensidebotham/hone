@@ -13,6 +13,7 @@ import { type JobListRow } from "@/lib/jobs/constants";
 export interface BrowserJob extends JobListItemData {
   url: string | null;
   descriptionText: string;
+  descriptionHtml: string | null;
 }
 
 function toBrowserJob(row: JobListRow): BrowserJob {
@@ -21,6 +22,7 @@ function toBrowserJob(row: JobListRow): BrowserJob {
     salary: row.salary, url: row.url,
     postedAt: row.postedAt ? new Date(row.postedAt).toISOString() : null,
     techTags: row.techTags, descriptionText: row.descriptionText,
+    descriptionHtml: row.descriptionHtml,
   };
 }
 
@@ -75,6 +77,7 @@ export function JobsBrowser({
         id: selected.id, title: selected.title, company: selected.company,
         location: selected.location, salary: selected.salary, url: selected.url,
         descriptionText: selected.descriptionText,
+        descriptionHtml: selected.descriptionHtml,
       }
     : null;
 

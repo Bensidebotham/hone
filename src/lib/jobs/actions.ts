@@ -20,7 +20,7 @@ export async function loadMoreJobs(
     select: {
       id: true, title: true, company: true, location: true, url: true,
       salary: true, postedAt: true, roleCategory: true, level: true,
-      techTags: true, descriptionText: true,
+      techTags: true, descriptionText: true, descriptionHtml: true,
     },
   });
   const nextCursor = jobs.length === JOBS_PAGE_SIZE ? jobs[jobs.length - 1].id : null;

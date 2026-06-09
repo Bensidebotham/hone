@@ -13,6 +13,7 @@ export interface JobDetailData {
   salary: string | null;
   url: string | null;
   descriptionText: string;
+  descriptionHtml: string | null;
 }
 
 export function JobDetailPane({ job }: { job: JobDetailData | null }) {
@@ -55,9 +56,17 @@ export function JobDetailPane({ job }: { job: JobDetailData | null }) {
 
       <hr className="my-4 border-border" />
 
-      <div className="prose prose-sm max-w-none whitespace-pre-wrap text-sm leading-relaxed">
-        {job.descriptionText}
-      </div>
+      {job.descriptionHtml ? (
+        <div
+          className="prose prose-sm dark:prose-invert max-w-none"
+          // Sanitized at ingest via sanitize-html (allowlisted tags only), so this is safe to render.
+          dangerouslySetInnerHTML={{ __html: job.descriptionHtml }}
+        />
+      ) : (
+        <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+          {job.descriptionText}
+        </div>
+      )}
     </div>
   );
 }

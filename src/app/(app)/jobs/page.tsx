@@ -25,7 +25,7 @@ export default async function JobsPage({
       take: JOBS_PAGE_SIZE,
       select: {
         id: true, title: true, company: true, location: true, url: true,
-        salary: true, postedAt: true, techTags: true, descriptionText: true,
+        salary: true, postedAt: true, techTags: true, descriptionText: true, descriptionHtml: true,
       },
     }),
     listSavedJobIds(user.id),
@@ -36,6 +36,7 @@ export default async function JobsPage({
     salary: r.salary, url: r.url,
     postedAt: r.postedAt ? r.postedAt.toISOString() : null,
     techTags: r.techTags, descriptionText: r.descriptionText,
+    descriptionHtml: r.descriptionHtml,
   }));
 
   const initialCursor =

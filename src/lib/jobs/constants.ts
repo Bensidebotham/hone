@@ -12,4 +12,5 @@ export interface JobListRow {
   level: string | null;
   techTags: string[];
   descriptionText: string;
+  descriptionHtml: string | null;
 }
