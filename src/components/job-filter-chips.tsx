@@ -64,6 +64,9 @@ export function JobFilterChips() {
 
   const remote = sp.get("remote") === "true";
 
+  const FILTER_KEYS = ["q", "location", "roleCategory", "level", "techTags", "salaryMin", "postedWithin", "remote"];
+  const hasActiveFilters = FILTER_KEYS.some((k) => sp.get(k));
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Chip name="postedWithin" options={DATE_OPTIONS} current={sp.get("postedWithin") ?? ""} />
@@ -80,6 +83,15 @@ export function JobFilterChips() {
         />
         Remote
       </label>
+      {hasActiveFilters && (
+        <button
+          type="button"
+          onClick={() => router.push("/jobs")}
+          className="text-sm text-muted-foreground hover:text-foreground underline-offset-4 hover:underline transition-colors"
+        >
+          Clear all
+        </button>
+      )}
     </div>
   );
 }

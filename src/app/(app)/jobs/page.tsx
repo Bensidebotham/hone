@@ -18,7 +18,7 @@ export default async function JobsPage({
   const user = await requireUser();
   const where = buildJobWhere(params, user.id);
 
-  const [rows, savedSet] = await Promise.all([
+  const [rows, savedSet, totalCount] = await Promise.all([
     prisma.job.findMany({
       where,
       orderBy: [{ postedAt: "desc" }, { id: "desc" }],
@@ -29,6 +29,7 @@ export default async function JobsPage({
       },
     }),
     listSavedJobIds(user.id),
+    prisma.job.count({ where }),
   ]);
 
   const initialJobs: BrowserJob[] = rows.map((r) => ({
@@ -50,6 +51,10 @@ export default async function JobsPage({
       <h1 className="text-2xl font-semibold mb-1">Jobs</h1>
       <p className="text-muted-foreground mb-4">
         Browse US software roles synced from company job boards.
+      </p>
+      <p className="text-sm text-muted-foreground mb-3">
+        {totalCount.toLocaleString()} {totalCount === 1 ? "role" : "roles"}
+        {filterKeys.length > 0 ? " match your filters" : " available"}
       </p>
 
       <div className="flex flex-col gap-3 mb-4">

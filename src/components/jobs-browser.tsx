@@ -44,13 +44,21 @@ export function JobsBrowser({
   const [loading, setLoading] = useState(false);
   const saved = useMemo(() => new Set(savedIds), [savedIds]);
 
-  const selectedId = sp.get("selected") ?? jobs[0]?.id ?? null;
+  const explicitSelected = sp.get("selected");
+  const selectedId = explicitSelected ?? jobs[0]?.id ?? null;
   const selected = jobs.find((j) => j.id === selectedId) ?? null;
 
   function select(id: string) {
     const params = new URLSearchParams(sp.toString());
     params.set("selected", id);
     router.replace(`/jobs?${params.toString()}`, { scroll: false });
+  }
+
+  function clearSelection() {
+    const params = new URLSearchParams(sp.toString());
+    params.delete("selected");
+    const qs = params.toString();
+    router.replace(qs ? `/jobs?${qs}` : "/jobs", { scroll: false });
   }
 
   async function more() {
@@ -83,7 +91,7 @@ export function JobsBrowser({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] border border-border rounded-lg overflow-hidden h-[calc(100vh-220px)]">
-      <div className="overflow-y-auto border-r border-border min-h-0">
+      <div className={`${explicitSelected ? "hidden md:flex" : "flex"} flex-col overflow-y-auto border-r border-border min-h-0`}>
         {jobs.map((job) => (
           <JobListItem
             key={job.id}
@@ -101,8 +109,17 @@ export function JobsBrowser({
           </div>
         )}
       </div>
-      <div className="hidden md:block min-h-0 h-full overflow-hidden">
-        <JobDetailPane job={detail} />
+      <div className={`${explicitSelected ? "flex" : "hidden"} md:flex flex-col min-h-0 h-full overflow-hidden`}>
+        <button
+          type="button"
+          onClick={clearSelection}
+          className="md:hidden flex items-center gap-1 px-4 py-2 text-sm text-primary border-b border-border"
+        >
+          ← Back to results
+        </button>
+        <div className="flex-1 min-h-0">
+          <JobDetailPane job={detail} />
+        </div>
       </div>
     </div>
   );
