@@ -80,7 +80,7 @@ export function JobsBrowser({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] border border-border rounded-lg overflow-hidden h-[calc(100vh-220px)]">
-      <div className="overflow-y-auto border-r border-border">
+      <div className="overflow-y-auto border-r border-border min-h-0">
         {jobs.map((job) => (
           <JobListItem
             key={job.id}
@@ -98,7 +98,7 @@ export function JobsBrowser({
           </div>
         )}
       </div>
-      <div className="hidden md:block">
+      <div className="hidden md:block min-h-0 h-full overflow-hidden">
         <JobDetailPane job={detail} />
       </div>
     </div>
