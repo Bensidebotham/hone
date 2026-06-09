@@ -6,7 +6,13 @@ import {
   US_MARKERS,
   ROLE_RULES,
   LEVEL_RULES,
+  TECH_TERMS,
 } from "./enrich.data";
+
+// Precompile tech term regexes once at module load.
+const TECH_REGEXES = TECH_TERMS.map(
+  ([name, src]) => [name, new RegExp(src, "i")] as const
+);
 
 export interface LocationInfo {
   country: string | null;
@@ -61,4 +67,13 @@ export function classifyRole(title: string | null | undefined): RoleInfo {
   }
 
   return { roleCategory, level };
+}
+
+export function extractTechTags(title: string, description: string): string[] {
+  const haystack = `${title} ${description}`;
+  const found: string[] = [];
+  for (const [name, re] of TECH_REGEXES) {
+    if (re.test(haystack)) found.push(name);
+  }
+  return found;
 }

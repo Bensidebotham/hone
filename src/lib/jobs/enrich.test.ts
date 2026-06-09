@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseLocation } from "./enrich";
 import { classifyRole } from "./enrich";
+import { extractTechTags } from "./enrich";
 
 describe("parseLocation", () => {
   it("detects US from a state code", () => {
@@ -47,5 +48,26 @@ describe("classifyRole", () => {
   });
   it("detects staff before senior", () => {
     expect(classifyRole("Staff Software Engineer")).toEqual({ roleCategory: "fullstack", level: "staff" });
+  });
+});
+
+describe("extractTechTags", () => {
+  it("extracts canonical tech names, deduped", () => {
+    const tags = extractTechTags(
+      "Senior React Engineer",
+      "You will work with React, TypeScript and Node.js on AWS."
+    );
+    expect(tags).toEqual(expect.arrayContaining(["React", "TypeScript", "Node.js", "AWS"]));
+    expect(tags.filter((t) => t === "React")).toHaveLength(1);
+  });
+  it("does not match 'go' inside another word", () => {
+    expect(extractTechTags("Ongoing project work", "")).not.toContain("Go");
+  });
+  it("matches C++ and C# despite special chars", () => {
+    const tags = extractTechTags("C++ / C# Developer", "");
+    expect(tags).toEqual(expect.arrayContaining(["C++", "C#"]));
+  });
+  it("returns an empty array when nothing matches", () => {
+    expect(extractTechTags("Account Manager", "Manage accounts.")).toEqual([]);
   });
 });
