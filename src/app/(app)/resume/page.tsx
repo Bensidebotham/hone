@@ -1,7 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ResumeUpload } from "@/components/resume-upload";
-import { AppNav } from "@/components/app-nav";
 import {
   Card,
   CardContent,
@@ -20,10 +19,8 @@ export default async function ResumePage() {
   });
 
   return (
-    <div className="flex min-h-screen">
-      <AppNav />
-      <main className="flex-1 p-8 max-w-3xl">
-        <h1 className="text-2xl font-semibold mb-1">Resumes</h1>
+    <div className="max-w-3xl">
+      <h1 className="text-2xl font-semibold mb-1">Resumes</h1>
         <p className="text-muted-foreground mb-6">
           Upload a resume to get an AI-powered analysis with ATS feedback,
           keyword gaps, and improvement suggestions.
@@ -71,7 +68,6 @@ export default async function ResumePage() {
             })}
           </div>
         )}
-      </main>
     </div>
   );
 }

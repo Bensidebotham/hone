@@ -2,7 +2,6 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { LinkedinAnalysisSchema } from "@/lib/profile/linkedin-prompt";
 import { SiteAnalysisSchema } from "@/lib/profile/site-prompt";
-import { AppNav } from "@/components/app-nav";
 import { LinkedinForm } from "@/components/linkedin-form";
 import { SiteForm } from "@/components/site-form";
 import { ResumeRefreshButton } from "@/components/resume-refresh-button";
@@ -32,10 +31,8 @@ export default async function ProfilePage() {
   ]);
 
   return (
-    <div className="flex min-h-screen">
-      <AppNav />
-      <main className="flex-1 p-8 max-w-3xl">
-        <h1 className="text-2xl font-semibold mb-1">Profile Analysis</h1>
+    <div className="max-w-3xl">
+      <h1 className="text-2xl font-semibold mb-1">Profile Analysis</h1>
         <p className="text-sm text-muted-foreground mb-8">
           Get AI feedback on your LinkedIn presence and personal site.
         </p>
@@ -63,7 +60,6 @@ export default async function ProfilePage() {
             <SiteResult analysis={siteAnalysis} />
           </section>
         </div>
-      </main>
     </div>
   );
 }

@@ -3,7 +3,6 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ResumeAnalysisSchema } from "@/lib/resume/prompt";
 import { syncGoalsFromAnalysis, listGoals } from "@/lib/resume/goals";
-import { AppNav } from "@/components/app-nav";
 import { ResumeRefreshButton } from "@/components/resume-refresh-button";
 import { ResumeGoals } from "@/components/resume-goals";
 import { Badge } from "@/components/ui/badge";
@@ -48,10 +47,8 @@ export default async function ResumeDetailPage({
   }
 
   return (
-    <div className="flex min-h-screen">
-      <AppNav />
-      <main className="flex-1 p-8 max-w-3xl">
-        <h1 className="text-2xl font-semibold mb-1">{resume.label}</h1>
+    <div className="max-w-3xl">
+      <h1 className="text-2xl font-semibold mb-1">{resume.label}</h1>
         <p className="text-sm text-muted-foreground mb-6">
           Uploaded {new Date(resume.createdAt).toLocaleDateString()}
         </p>
@@ -216,7 +213,6 @@ export default async function ResumeDetailPage({
             </div>
           );
         })()}
-      </main>
     </div>
   );
 }

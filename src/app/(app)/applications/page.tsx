@@ -1,7 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { AppNav } from "@/components/app-nav";
 import { ApplicationKanban } from "@/components/application-kanban";
 
 export const dynamic = "force-dynamic";
@@ -17,15 +16,12 @@ export default async function ApplicationsPage() {
   });
 
   return (
-    <div className="flex min-h-screen">
-      <AppNav />
-      <main className="flex-1 p-8 overflow-x-auto">
-        <h1 className="text-2xl font-semibold mb-1">Applications</h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          Track your job applications across every stage of the pipeline.
-        </p>
-        <ApplicationKanban applications={apps} />
-      </main>
+    <div className="overflow-x-auto">
+      <h1 className="text-2xl font-semibold mb-1">Applications</h1>
+      <p className="text-sm text-muted-foreground mb-6">
+        Track your job applications across every stage of the pipeline.
+      </p>
+      <ApplicationKanban applications={apps} />
     </div>
   );
 }
