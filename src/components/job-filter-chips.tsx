@@ -14,8 +14,9 @@ const ROLE_OPTIONS = [
 ] as const;
 
 const LEVEL_OPTIONS = [
-  ["", "Level: Any"], ["intern", "Intern"], ["junior", "Junior"], ["mid", "Mid"],
-  ["senior", "Senior"], ["staff", "Staff"], ["lead", "Lead"], ["manager", "Manager"],
+  ["", "Entry-level"], ["all", "All levels"], ["intern", "Internships"],
+  ["mid", "Mid"], ["senior", "Senior"], ["staff", "Staff"],
+  ["lead", "Lead"], ["manager", "Manager"],
 ] as const;
 
 const DATE_OPTIONS = [
