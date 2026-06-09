@@ -19,8 +19,8 @@ describe("parseLocation", () => {
   it("flags remote with no resolvable country", () => {
     expect(parseLocation("Remote")).toEqual({ country: null, isRemote: true });
   });
-  it("returns null country for a foreign location", () => {
-    expect(parseLocation("London, UK")).toEqual({ country: null, isRemote: false });
+  it("returns non-null country for a foreign location", () => {
+    expect(parseLocation("London, UK")).not.toEqual({ country: null, isRemote: false });
   });
   it("returns null country for ambiguous text", () => {
     expect(parseLocation("Worldwide")).toEqual({ country: null, isRemote: false });
@@ -104,5 +104,20 @@ describe("enrichJob", () => {
     expect(result.salaryMax).toBe(160000);
     expect(result.isRemote).toBe(true);
     expect(result.country).toBeNull();
+  });
+});
+
+describe("parseLocation foreign detection", () => {
+  it("flags foreign locations as INTL", () => {
+    expect(parseLocation("London, UK")).toEqual({ country: "INTL", isRemote: false });
+    expect(parseLocation("Bangalore, India")).toEqual({ country: "INTL", isRemote: false });
+    expect(parseLocation("Remote - EMEA")).toEqual({ country: "INTL", isRemote: true });
+    expect(parseLocation("Toronto, Canada")).toEqual({ country: "INTL", isRemote: false });
+  });
+  it("still resolves US before INTL", () => {
+    expect(parseLocation("New York, NY")).toEqual({ country: "US", isRemote: false });
+  });
+  it("keeps bare Remote ambiguous (null)", () => {
+    expect(parseLocation("Remote")).toEqual({ country: null, isRemote: true });
   });
 });

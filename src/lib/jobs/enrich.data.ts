@@ -96,3 +96,23 @@ export const TECH_TERMS: ReadonlyArray<readonly [string, string]> = [
   ["TensorFlow", "\\btensorflow\\b"],
   ["PyTorch", "\\bpytorch\\b"],
 ];
+
+// Non-US signals: country names, ISO-2 codes, major foreign cities, and regions.
+export const FOREIGN_COUNTRY_TOKENS = new Set([
+  "uk","u.k.","gb","england","scotland","wales","ireland","ie",
+  "canada","ca-canada","germany","de-germany","france","spain","italy",
+  "netherlands","poland","sweden","switzerland","portugal","romania",
+  "india","in-india","singapore","sg","japan","jp","china","cn",
+  "australia","au","brazil","br","mexico","mx","israel","il",
+]);
+export const FOREIGN_MARKERS = [
+  "united kingdom","england","scotland","ireland","dublin","london",
+  "germany","berlin","munich","france","paris","netherlands","amsterdam",
+  "spain","madrid","barcelona","italy","milan","poland","warsaw","krakow",
+  "sweden","stockholm","switzerland","zurich","canada","toronto","vancouver",
+  "ontario","quebec","india","bangalore","bengaluru","hyderabad","pune",
+  "mumbai","delhi","gurgaon","noida","chennai","singapore","japan","tokyo",
+  "china","beijing","shanghai","australia","sydney","melbourne","brazil",
+  "são paulo","sao paulo","mexico city","israel","tel aviv",
+  "emea","apac","latam"," eu "," europe","european union",
+];

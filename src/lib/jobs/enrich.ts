@@ -5,6 +5,8 @@ import {
   US_STATE_NAMES,
   US_CITIES,
   US_MARKERS,
+  FOREIGN_COUNTRY_TOKENS,
+  FOREIGN_MARKERS,
   ROLE_RULES,
   LEVEL_RULES,
   TECH_TERMS,
@@ -38,6 +40,14 @@ export function parseLocation(location: string | null | undefined): LocationInfo
     if (US_STATE_CODES.has(upper)) return { country: "US", isRemote };
     if (US_STATE_NAMES.has(tok)) return { country: "US", isRemote };
     if (US_CITIES.has(tok)) return { country: "US", isRemote };
+  }
+
+  // Foreign detection (after US): token codes or substring markers.
+  for (const tok of tokens) {
+    if (FOREIGN_COUNTRY_TOKENS.has(tok)) return { country: "INTL", isRemote };
+  }
+  if (FOREIGN_MARKERS.some((m) => raw.includes(m))) {
+    return { country: "INTL", isRemote };
   }
 
   return { country: null, isRemote };
