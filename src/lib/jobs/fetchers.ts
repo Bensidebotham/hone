@@ -1,5 +1,6 @@
 import type { BoardConfig } from "./boards.config";
 import { parseSalary } from "./salary";
+import { cleanDescription } from "./description";
 
 export interface NormalizedJob {
   externalId: string;
@@ -8,6 +9,7 @@ export interface NormalizedJob {
   location: string | null;
   url: string | null;
   descriptionText: string;
+  descriptionHtml: string;
   postedAt: Date | null;
   salary: string | null;
 }
@@ -15,12 +17,6 @@ export interface NormalizedJob {
 interface Opts {
   fetchFn?: typeof fetch;
 }
-
-const stripHtml = (s: string) =>
-  s
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 
 export async function fetchBoard(
   cfg: BoardConfig,
@@ -35,16 +31,17 @@ export async function fetchBoard(
     if (!res.ok) return [];
     const data = await res.json();
     return (data.jobs ?? []).map((j: any) => {
-      const descriptionText = stripHtml(j.content ?? "");
+      const { text, html } = cleanDescription(j.content ?? "");
       return {
         externalId: `greenhouse:${cfg.slug}:${j.id}`,
         company: cfg.company,
         title: j.title,
         location: j.location?.name ?? null,
         url: j.absolute_url ?? null,
-        descriptionText,
+        descriptionText: text,
+        descriptionHtml: html,
         postedAt: j.updated_at ? new Date(j.updated_at) : null,
-        salary: parseSalary(descriptionText),
+        salary: parseSalary(text),
       };
     });
   }
@@ -56,16 +53,17 @@ export async function fetchBoard(
     if (!res.ok) return [];
     const data = await res.json();
     return (data ?? []).map((j: any) => {
-      const descriptionText = stripHtml(j.descriptionPlain ?? j.description ?? "");
+      const { text, html } = cleanDescription(j.description ?? j.descriptionPlain ?? "");
       return {
         externalId: `lever:${cfg.slug}:${j.id}`,
         company: cfg.company,
         title: j.text,
         location: j.categories?.location ?? null,
         url: j.hostedUrl ?? null,
-        descriptionText,
+        descriptionText: text,
+        descriptionHtml: html,
         postedAt: j.createdAt ? new Date(j.createdAt) : null,
-        salary: parseSalary(descriptionText),
+        salary: parseSalary(text),
       };
     });
   }
@@ -77,9 +75,7 @@ export async function fetchBoard(
   if (!res.ok) return [];
   const data = await res.json();
   return (data.jobs ?? []).map((j: any) => {
-    const descriptionText = stripHtml(
-      j.descriptionPlain ?? j.descriptionHtml ?? ""
-    );
+    const { text, html } = cleanDescription(j.descriptionHtml ?? j.descriptionPlain ?? "");
     // Prefer Ashby's human-readable compensation summary; fall back to description parsing.
     // Guard: compensationTierSummary may be a non-string (object/number) on some responses.
     const tierSummary = j.compensation?.compensationTierSummary;
@@ -88,14 +84,15 @@ export async function fetchBoard(
     // "$120K – $160K" → "$120K–$160K"); fall back to raw summary if parseSalary can't parse it.
     const salary: string | null =
       (summaryStr ? parseSalary(summaryStr) ?? summaryStr : null) ??
-      parseSalary(descriptionText);
+      parseSalary(text);
     return {
       externalId: `ashby:${cfg.slug}:${j.id}`,
       company: cfg.company,
       title: j.title,
       location: j.location ?? null,
       url: j.jobUrl ?? null,
-      descriptionText,
+      descriptionText: text,
+      descriptionHtml: html,
       postedAt: j.publishedAt ? new Date(j.publishedAt) : null,
       salary,
     };

@@ -12,7 +12,7 @@ describe("fetchBoard greenhouse", () => {
             title: "SWE",
             absolute_url: "http://x/123",
             location: { name: "NYC" },
-            content: "<p>Build things</p>",
+            content: "&lt;p&gt;Build &amp; ship.&lt;/p&gt;",
             updated_at: "2026-01-01T00:00:00Z",
           },
         ],
@@ -29,7 +29,12 @@ describe("fetchBoard greenhouse", () => {
       location: "NYC",
       url: "http://x/123",
     });
-    expect(jobs[0].descriptionText).toContain("Build things");
+    // descriptionText is plain text — decoded, tag-free
+    expect(jobs[0].descriptionText).toContain("Build & ship.");
+    expect(jobs[0].descriptionText).not.toContain("<");
+    // descriptionHtml is sanitized HTML — decoded and real tags restored
+    expect(jobs[0].descriptionHtml).toContain("<p>");
+    expect(jobs[0].descriptionHtml).not.toContain("&lt;");
   });
 });
 
@@ -43,7 +48,7 @@ describe("fetchBoard lever", () => {
           text: "Staff Engineer",
           categories: { location: "Remote" },
           hostedUrl: "https://jobs.lever.co/netflix/lever-abc-123",
-          descriptionPlain: "Work on streaming infrastructure.",
+          description: "<p>Work on <strong>streaming</strong> infrastructure.</p>",
           createdAt: 1700000000000,
         },
       ],
@@ -59,6 +64,11 @@ describe("fetchBoard lever", () => {
       location: "Remote",
       url: "https://jobs.lever.co/netflix/lever-abc-123",
     });
+    // descriptionText is tag-free plain text
+    expect(jobs[0].descriptionText).toBe("Work on streaming infrastructure.");
+    expect(jobs[0].descriptionText).not.toContain("<");
+    // descriptionHtml preserves allowed tags
+    expect(jobs[0].descriptionHtml).toContain("<strong>streaming</strong>");
   });
 });
 
@@ -73,7 +83,7 @@ describe("fetchBoard ashby", () => {
             title: "Product Designer",
             location: "New York, NY",
             jobUrl: "https://jobs.ashbyhq.com/ramp/ashby-xyz-456",
-            descriptionPlain: "Design great products.",
+            descriptionHtml: "<p>Design <strong>great</strong> products.</p>",
             publishedAt: "2026-02-01T00:00:00Z",
           },
         ],
@@ -90,6 +100,9 @@ describe("fetchBoard ashby", () => {
       location: "New York, NY",
       url: "https://jobs.ashbyhq.com/ramp/ashby-xyz-456",
     });
+    // descriptionText is plain; descriptionHtml preserves allowed tags
+    expect(jobs[0].descriptionText).toBe("Design great products.");
+    expect(jobs[0].descriptionHtml).toContain("<strong>great</strong>");
   });
 
   it("maps compensationTierSummary to salary when present", async () => {
@@ -128,7 +141,7 @@ describe("fetchBoard ashby", () => {
             title: "Data Engineer",
             location: "Austin, TX",
             jobUrl: "https://jobs.ashbyhq.com/acme/ashby-nocomp-111",
-            descriptionPlain: "Pay range: $130,000 - $155,000 per year.",
+            descriptionHtml: "<p>Pay range: $130,000 - $155,000 per year.</p>",
             publishedAt: "2026-04-01T00:00:00Z",
           },
         ],

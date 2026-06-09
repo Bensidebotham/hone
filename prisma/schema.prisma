@@ -122,6 +122,7 @@ model Job {
   url             String?
   salary          String?
   descriptionText String
+  descriptionHtml String?
   postedAt        DateTime?
   createdAt       DateTime      @default(now())
   // Enrichment (heuristic, populated at ingest)
