@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 const SELECT_CLASS =
   "h-8 rounded-full border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 transition-colors dark:bg-input/30";
 
+const SORT_OPTIONS = [["", "Sort: Newest"], ["salary", "Sort: Highest salary"]] as const;
+
 const ROLE_OPTIONS = [
   ["", "Role: Any"], ["frontend", "Frontend"], ["backend", "Backend"],
   ["fullstack", "Full-stack"], ["mobile", "Mobile"], ["ml-ai", "ML / AI"],
@@ -69,6 +71,7 @@ export function JobFilterChips() {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <Chip name="sort" options={SORT_OPTIONS} current={sp.get("sort") ?? ""} />
       <Chip name="postedWithin" options={DATE_OPTIONS} current={sp.get("postedWithin") ?? ""} />
       <Chip name="roleCategory" options={ROLE_OPTIONS} current={sp.get("roleCategory") ?? ""} />
       <Chip name="level" options={LEVEL_OPTIONS} current={sp.get("level") ?? ""} />

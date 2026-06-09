@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildJobWhere } from "@/lib/jobs/filters";
 import { listSavedJobIds } from "@/lib/jobs/saved-queries";
-import { JOBS_PAGE_SIZE } from "@/lib/jobs/constants";
+import { JOBS_PAGE_SIZE, jobOrderBy } from "@/lib/jobs/constants";
 import { JobSearchBar } from "@/components/job-search-bar";
 import { JobFilterChips } from "@/components/job-filter-chips";
 import { JobsBrowser, type BrowserJob } from "@/components/jobs-browser";
@@ -21,7 +21,7 @@ export default async function JobsPage({
   const [rows, savedSet, totalCount] = await Promise.all([
     prisma.job.findMany({
       where,
-      orderBy: [{ postedAt: "desc" }, { id: "desc" }],
+      orderBy: jobOrderBy(typeof params.sort === "string" ? params.sort : undefined),
       take: JOBS_PAGE_SIZE,
       select: {
         id: true, title: true, company: true, location: true, url: true,

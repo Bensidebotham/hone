@@ -3,7 +3,7 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildJobWhere } from "@/lib/jobs/filters";
-import { JOBS_PAGE_SIZE, type JobListRow } from "@/lib/jobs/constants";
+import { JOBS_PAGE_SIZE, jobOrderBy, type JobListRow } from "@/lib/jobs/constants";
 
 export async function loadMoreJobs(
   params: Record<string, string | undefined>,
@@ -13,7 +13,7 @@ export async function loadMoreJobs(
   const where = buildJobWhere(params, user.id);
   const jobs = await prisma.job.findMany({
     where,
-    orderBy: [{ postedAt: "desc" }, { id: "desc" }],
+    orderBy: jobOrderBy(params.sort),
     cursor: { id: cursorId },
     skip: 1,
     take: JOBS_PAGE_SIZE,
