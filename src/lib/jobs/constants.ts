@@ -27,3 +27,10 @@ export interface JobListRow {
   descriptionText: string;
   descriptionHtml: string | null;
 }
+
+/** Prisma select matching JobListRow — shared by feed/grouped/action queries. */
+export const JOB_LIST_SELECT = {
+  id: true, title: true, company: true, location: true, url: true,
+  salary: true, postedAt: true, roleCategory: true, level: true,
+  techTags: true, descriptionText: true, descriptionHtml: true,
+} as const;
