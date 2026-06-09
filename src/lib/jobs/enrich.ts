@@ -1,4 +1,5 @@
 // src/lib/jobs/enrich.ts
+import { parseSalaryRange } from "./salary";
 import {
   US_STATE_CODES,
   US_STATE_NAMES,
@@ -76,4 +77,32 @@ export function extractTechTags(title: string, description: string): string[] {
     if (re.test(haystack)) found.push(name);
   }
   return found;
+}
+
+export interface EnrichInput {
+  title: string;
+  location: string | null;
+  descriptionText: string;
+  salary: string | null;
+}
+
+export interface JobEnrichment {
+  country: string | null;
+  isRemote: boolean;
+  roleCategory: string;
+  level: string | null;
+  techTags: string[];
+  salaryMin: number | null;
+  salaryMax: number | null;
+}
+
+export function enrichJob(input: EnrichInput): JobEnrichment {
+  const { country, isRemote } = parseLocation(input.location);
+  const { roleCategory, level } = classifyRole(input.title);
+  const techTags = extractTechTags(input.title, input.descriptionText);
+  // Prefer the salary field; fall back to scanning the description.
+  const { salaryMin, salaryMax } = parseSalaryRange(
+    input.salary ?? input.descriptionText
+  );
+  return { country, isRemote, roleCategory, level, techTags, salaryMin, salaryMax };
 }

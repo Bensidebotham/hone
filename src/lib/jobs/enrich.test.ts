@@ -71,3 +71,38 @@ describe("extractTechTags", () => {
     expect(extractTechTags("Account Manager", "Manage accounts.")).toEqual([]);
   });
 });
+
+import { enrichJob } from "./enrich";
+
+describe("enrichJob", () => {
+  it("produces the full enrichment object", () => {
+    const result = enrichJob({
+      title: "Senior Frontend Engineer",
+      location: "New York, NY",
+      descriptionText: "Build with React and TypeScript. $150k – $190k.",
+      salary: "$150K–$190K",
+    });
+    expect(result).toEqual({
+      country: "US",
+      isRemote: false,
+      roleCategory: "frontend",
+      level: "senior",
+      techTags: expect.arrayContaining(["React", "TypeScript"]),
+      salaryMin: 150000,
+      salaryMax: 190000,
+    });
+  });
+
+  it("derives salary from description when salary field is absent", () => {
+    const result = enrichJob({
+      title: "Backend Engineer",
+      location: "Remote",
+      descriptionText: "Compensation: $120,000 to $160,000.",
+      salary: null,
+    });
+    expect(result.salaryMin).toBe(120000);
+    expect(result.salaryMax).toBe(160000);
+    expect(result.isRemote).toBe(true);
+    expect(result.country).toBeNull();
+  });
+});
