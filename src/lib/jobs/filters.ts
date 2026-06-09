@@ -28,6 +28,12 @@ const FilterParams = z.object({
     .transform((v) => (!v || !postedWithinPattern.test(v) ? undefined : v)),
 });
 
+// Software / CS role categories shown in the feed. Excludes "other" (non-technical) and unclassified.
+export const CS_ROLE_CATEGORIES = [
+  "frontend", "backend", "fullstack", "mobile",
+  "ml-ai", "data", "devops", "security", "qa",
+] as const;
+
 export function buildJobWhere(
   rawParams: Record<string, string | string[] | undefined>,
   _userId: string
@@ -40,9 +46,10 @@ export function buildJobWhere(
   const parsed = FilterParams.safeParse(flat);
   const params = parsed.success ? parsed.data : ({} as z.infer<typeof FilterParams>);
 
-  // Base: ATS-sourced, US or remote only.
+  // Base: ATS-sourced, CS/software roles only, US or remote only.
   const base: Prisma.JobWhereInput = {
     source: "ats",
+    roleCategory: { in: [...CS_ROLE_CATEGORIES] },
     OR: [{ country: "US" }, { isRemote: true }],
   };
 

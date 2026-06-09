@@ -47,4 +47,13 @@ describe("buildJobWhere", () => {
     const where = buildJobWhere({ salaryMin: "abc" }, USER);
     expect(where).not.toHaveProperty("AND");
   });
+
+  it("restricts the feed to CS/software role categories", () => {
+    const where = buildJobWhere({}, "u1");
+    expect(where).toMatchObject({
+      roleCategory: { in: expect.arrayContaining(["frontend", "backend", "fullstack", "ml-ai"]) },
+    });
+    // non-technical bucket is excluded
+    expect((where.roleCategory as { in: string[] }).in).not.toContain("other");
+  });
 });
