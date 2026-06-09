@@ -2,8 +2,10 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ResumeAnalysisSchema } from "@/lib/resume/prompt";
+import { syncGoalsFromAnalysis, listGoals } from "@/lib/resume/goals";
 import { AppNav } from "@/components/app-nav";
 import { ResumeRefreshButton } from "@/components/resume-refresh-button";
+import { ResumeGoals } from "@/components/resume-goals";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -32,6 +34,18 @@ export default async function ResumeDetailPage({
   if (!resume) notFound();
 
   const analysis = resume.analyses[0] ?? null;
+
+  // Hoist async goals work into the async server component body (cannot call
+  // async helpers inside the synchronous render IIFE below).
+  let parsedAnalysis: ReturnType<typeof ResumeAnalysisSchema.safeParse> | null = null;
+  let goals: Awaited<ReturnType<typeof listGoals>> = [];
+  if (analysis?.status === "complete") {
+    parsedAnalysis = ResumeAnalysisSchema.safeParse(analysis.result);
+    if (parsedAnalysis.success) {
+      await syncGoalsFromAnalysis(resume.id, parsedAnalysis.data.suggestions);
+      goals = await listGoals(resume.id);
+    }
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -79,7 +93,7 @@ export default async function ResumeDetailPage({
         )}
 
         {analysis?.status === "complete" && (() => {
-          const parsed = ResumeAnalysisSchema.safeParse(analysis.result);
+          const parsed = parsedAnalysis!;
 
           if (!parsed.success) {
             return (
@@ -193,6 +207,11 @@ export default async function ResumeDetailPage({
                     )}
                   </CardContent>
                 </Card>
+              )}
+
+              {/* Goals — sync'd from suggestions above, rendered as a checkable list */}
+              {goals.length > 0 && (
+                <ResumeGoals resumeId={resume.id} goals={goals} />
               )}
             </div>
           );
