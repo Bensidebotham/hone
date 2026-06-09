@@ -107,6 +107,24 @@ describe("enrichJob", () => {
   });
 });
 
+describe("classifyRole entry-level", () => {
+  it("tags new-grad / associate / early-career as junior", () => {
+    expect(classifyRole("New Grad Software Engineer").level).toBe("junior");
+    expect(classifyRole("Associate Software Engineer").level).toBe("junior");
+    expect(classifyRole("Early Career Backend Engineer").level).toBe("junior");
+    expect(classifyRole("Software Engineer, University Graduate").level).toBe("junior");
+  });
+  it("tags numeric level I/II as junior", () => {
+    expect(classifyRole("Software Engineer I").level).toBe("junior");
+    expect(classifyRole("Backend Developer II").level).toBe("junior");
+  });
+  it("does not over-match (senior/intern unaffected)", () => {
+    expect(classifyRole("Senior Software Engineer").level).toBe("senior");
+    expect(classifyRole("Software Engineering Intern").level).toBe("intern");
+    expect(classifyRole("Staff Engineer").level).toBe("staff");
+  });
+});
+
 describe("parseLocation foreign detection", () => {
   it("flags foreign locations as INTL", () => {
     expect(parseLocation("London, UK")).toEqual({ country: "INTL", isRemote: false });

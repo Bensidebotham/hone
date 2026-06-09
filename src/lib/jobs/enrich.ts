@@ -77,6 +77,11 @@ export function classifyRole(title: string | null | undefined): RoleInfo {
     }
   }
 
+  // Numeric entry levels: "Engineer I/II", "Developer 1/2", "SWE I" → junior (only if unmatched).
+  if (level === null && /\b(engineer|developer|swe)\s+(i{1,2}|1|2)\b/.test(t)) {
+    level = "junior";
+  }
+
   return { roleCategory, level };
 }
 

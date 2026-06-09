@@ -51,7 +51,7 @@ export const LEVEL_RULES: ReadonlyArray<readonly [string, readonly string[]]> = 
   ["lead", ["lead", "tech lead"]],
   ["manager", ["manager", "director", "head of", "vp ", "vice president"]],
   ["senior", ["senior", "sr.", "sr ", "snr"]],
-  ["junior", ["junior", "jr.", "jr ", "entry level", "entry-level", "new grad", "graduate"]],
+  ["junior", ["junior", "jr.", "jr ", "entry level", "entry-level", "new grad", "new graduate", "early career", "early-career", "university grad", "university graduate", "campus", "associate", "graduate"]],
 ];
 
 // Canonical tech term -> regex source matched against title+description.
