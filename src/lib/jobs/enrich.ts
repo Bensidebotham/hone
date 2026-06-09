@@ -4,6 +4,8 @@ import {
   US_STATE_NAMES,
   US_CITIES,
   US_MARKERS,
+  ROLE_RULES,
+  LEVEL_RULES,
 } from "./enrich.data";
 
 export interface LocationInfo {
@@ -32,4 +34,31 @@ export function parseLocation(location: string | null | undefined): LocationInfo
   }
 
   return { country: null, isRemote };
+}
+
+export interface RoleInfo {
+  roleCategory: string;
+  level: string | null;
+}
+
+export function classifyRole(title: string | null | undefined): RoleInfo {
+  const t = (title ?? "").toLowerCase();
+
+  let roleCategory = "other";
+  for (const [category, keywords] of ROLE_RULES) {
+    if (keywords.some((k) => t.includes(k))) {
+      roleCategory = category;
+      break;
+    }
+  }
+
+  let level: string | null = null;
+  for (const [lvl, keywords] of LEVEL_RULES) {
+    if (keywords.some((k) => t.includes(k))) {
+      level = lvl;
+      break;
+    }
+  }
+
+  return { roleCategory, level };
 }

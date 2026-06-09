@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseLocation } from "./enrich";
+import { classifyRole } from "./enrich";
 
 describe("parseLocation", () => {
   it("detects US from a state code", () => {
@@ -25,5 +26,26 @@ describe("parseLocation", () => {
   });
   it("handles null input", () => {
     expect(parseLocation(null)).toEqual({ country: null, isRemote: false });
+  });
+});
+
+describe("classifyRole", () => {
+  it("classifies a specialized frontend title", () => {
+    expect(classifyRole("Senior Frontend Engineer")).toEqual({ roleCategory: "frontend", level: "senior" });
+  });
+  it("classifies ML over generic engineer", () => {
+    expect(classifyRole("Machine Learning Engineer")).toEqual({ roleCategory: "ml-ai", level: null });
+  });
+  it("falls back to fullstack for a generic software title", () => {
+    expect(classifyRole("Software Engineer")).toEqual({ roleCategory: "fullstack", level: null });
+  });
+  it("buckets a non-software title as other", () => {
+    expect(classifyRole("Account Executive")).toEqual({ roleCategory: "other", level: null });
+  });
+  it("detects intern level", () => {
+    expect(classifyRole("Backend Engineering Intern")).toEqual({ roleCategory: "backend", level: "intern" });
+  });
+  it("detects staff before senior", () => {
+    expect(classifyRole("Staff Software Engineer")).toEqual({ roleCategory: "fullstack", level: "staff" });
   });
 });
