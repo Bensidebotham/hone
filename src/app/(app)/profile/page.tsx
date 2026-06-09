@@ -33,33 +33,33 @@ export default async function ProfilePage() {
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-semibold mb-1">Profile Analysis</h1>
-        <p className="text-sm text-muted-foreground mb-8">
-          Get AI feedback on your LinkedIn presence and personal site.
-        </p>
+      <p className="text-sm text-muted-foreground mb-8">
+        Get AI feedback on your LinkedIn presence and personal site.
+      </p>
 
-        <div className="flex flex-col gap-10">
-          {/* ── LinkedIn Section ── */}
-          <section>
-            <h2 className="text-lg font-semibold mb-4">LinkedIn</h2>
-            <Card className="mb-4">
-              <CardContent className="pt-6">
-                <LinkedinForm />
-              </CardContent>
-            </Card>
-            <LinkedinResult analysis={linkedinAnalysis} />
-          </section>
+      <div className="flex flex-col gap-10">
+        {/* ── LinkedIn Section ── */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">LinkedIn</h2>
+          <Card className="mb-4">
+            <CardContent className="pt-6">
+              <LinkedinForm />
+            </CardContent>
+          </Card>
+          <LinkedinResult analysis={linkedinAnalysis} />
+        </section>
 
-          {/* ── Site Section ── */}
-          <section>
-            <h2 className="text-lg font-semibold mb-4">Personal Site</h2>
-            <Card className="mb-4">
-              <CardContent className="pt-6">
-                <SiteForm />
-              </CardContent>
-            </Card>
-            <SiteResult analysis={siteAnalysis} />
-          </section>
-        </div>
+        {/* ── Site Section ── */}
+        <section>
+          <h2 className="text-lg font-semibold mb-4">Personal Site</h2>
+          <Card className="mb-4">
+            <CardContent className="pt-6">
+              <SiteForm />
+            </CardContent>
+          </Card>
+          <SiteResult analysis={siteAnalysis} />
+        </section>
+      </div>
     </div>
   );
 }
