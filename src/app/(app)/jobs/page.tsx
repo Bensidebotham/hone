@@ -6,7 +6,8 @@ import { JOBS_PAGE_SIZE, jobOrderBy, JOB_LIST_SELECT } from "@/lib/jobs/constant
 import { getCompanyFeedPage } from "@/lib/jobs/grouped";
 import { JobSearchBar } from "@/components/job-search-bar";
 import { JobFilterChips } from "@/components/job-filter-chips";
-import { JobsBrowser, toBrowserJob } from "@/components/jobs-browser";
+import { JobsBrowser } from "@/components/jobs-browser";
+import { toBrowserJob } from "@/components/job-browser-types";
 import { type BrowserGroup } from "@/components/company-group";
 import { JobScopeTabs } from "@/components/job-scope-tabs";
 
