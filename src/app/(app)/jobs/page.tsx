@@ -2,87 +2,78 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildJobWhere } from "@/lib/jobs/filters";
 import { listSavedJobIds } from "@/lib/jobs/saved-queries";
-import { JOBS_PAGE_SIZE, jobOrderBy } from "@/lib/jobs/constants";
+import { JOBS_PAGE_SIZE, jobOrderBy, JOB_LIST_SELECT } from "@/lib/jobs/constants";
+import { getCompanyFeedPage } from "@/lib/jobs/grouped";
 import { JobSearchBar } from "@/components/job-search-bar";
 import { JobFilterChips } from "@/components/job-filter-chips";
-import { JobsBrowser, type BrowserJob } from "@/components/jobs-browser";
+import { JobsBrowser, toBrowserJob } from "@/components/jobs-browser";
+import { type BrowserGroup } from "@/components/company-group";
 import { JobScopeTabs } from "@/components/job-scope-tabs";
 
 export const dynamic = "force-dynamic";
+
+function JobsHeader({ savedCount, totalCount, isSavedView, filterKeys }: { savedCount: number; totalCount: number; isSavedView: boolean; filterKeys: string[] }) {
+  return (
+    <>
+      <h1 className="text-2xl font-semibold mb-1">Jobs</h1>
+      <p className="text-muted-foreground mb-4">Entry-level US software roles, grouped by company.</p>
+      <div className="mb-3"><JobScopeTabs savedCount={savedCount} /></div>
+      <p className="text-sm text-muted-foreground mb-3">
+        {isSavedView
+          ? `${totalCount.toLocaleString()} ${totalCount === 1 ? "saved role" : "saved roles"}`
+          : `${totalCount.toLocaleString()} ${totalCount === 1 ? "role" : "roles"}${filterKeys.length > 0 ? " match your filters" : " available"}`}
+      </p>
+    </>
+  );
+}
 
 export default async function JobsPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const params = await searchParams;
+  const rawParams = await searchParams;
   const user = await requireUser();
+  const params: Record<string, string | undefined> = {};
+  for (const [k, v] of Object.entries(rawParams)) params[k] = Array.isArray(v) ? v[0] : v;
 
   const savedSet = await listSavedJobIds(user.id);
-
   const isSavedView = params.saved === "true";
-  const where = isSavedView
-    ? { id: { in: [...savedSet] } }
-    : buildJobWhere(params, user.id);
+  const filterKeys = Object.keys(rawParams).filter((k) => k !== "selected");
 
-  const [rows, totalCount] = await Promise.all([
-    prisma.job.findMany({
-      where,
-      orderBy: jobOrderBy(typeof params.sort === "string" ? params.sort : undefined),
-      take: JOBS_PAGE_SIZE,
-      select: {
-        id: true, title: true, company: true, location: true, url: true,
-        salary: true, postedAt: true, techTags: true, descriptionText: true, descriptionHtml: true,
-      },
-    }),
+  if (isSavedView) {
+    const where = { id: { in: [...savedSet] } };
+    const [rows, totalCount] = await Promise.all([
+      prisma.job.findMany({ where, orderBy: jobOrderBy(params.sort), take: JOBS_PAGE_SIZE, select: JOB_LIST_SELECT }),
+      prisma.job.count({ where }),
+    ]);
+    const initialJobs = rows.map(toBrowserJob);
+    const initialCursor = rows.length === JOBS_PAGE_SIZE ? rows[rows.length - 1].id : null;
+    return (
+      <div className="max-w-6xl">
+        <JobsHeader savedCount={savedSet.size} totalCount={totalCount} isSavedView filterKeys={filterKeys} />
+        <JobsBrowser savedView initialJobs={initialJobs} initialCursor={initialCursor} savedIds={[...savedSet]} hasFilters={filterKeys.length > 0} />
+      </div>
+    );
+  }
+
+  const where = buildJobWhere(params, user.id);
+  const [{ groups, hasMore }, totalCount] = await Promise.all([
+    getCompanyFeedPage(params, user.id, 0),
     prisma.job.count({ where }),
   ]);
-
-  const initialJobs: BrowserJob[] = rows.map((r) => ({
-    id: r.id, title: r.title, company: r.company, location: r.location,
-    salary: r.salary, url: r.url,
-    postedAt: r.postedAt ? r.postedAt.toISOString() : null,
-    techTags: r.techTags, descriptionText: r.descriptionText,
-    descriptionHtml: r.descriptionHtml,
+  const initialGroups: BrowserGroup[] = groups.map((g) => ({
+    company: g.company, totalCount: g.totalCount, topRoles: g.topRoles.map(toBrowserJob),
   }));
-
-  const initialCursor =
-    rows.length === JOBS_PAGE_SIZE ? rows[rows.length - 1].id : null;
-
-  // Selection-only params don't count as "filters" for the empty state.
-  const filterKeys = Object.keys(params).filter((k) => k !== "selected");
 
   return (
     <div className="max-w-6xl">
-      <h1 className="text-2xl font-semibold mb-1">Jobs</h1>
-      <p className="text-muted-foreground mb-4">
-        Browse US software roles synced from company job boards.
-      </p>
-
-      <div className="mb-3">
-        <JobScopeTabs savedCount={savedSet.size} />
+      <JobsHeader savedCount={savedSet.size} totalCount={totalCount} isSavedView={false} filterKeys={filterKeys} />
+      <div className="flex flex-col gap-3 mb-4">
+        <JobSearchBar />
+        <JobFilterChips />
       </div>
-
-      <p className="text-sm text-muted-foreground mb-3">
-        {isSavedView
-          ? `${totalCount.toLocaleString()} ${totalCount === 1 ? "saved role" : "saved roles"}`
-          : `${totalCount.toLocaleString()} ${totalCount === 1 ? "role" : "roles"}${filterKeys.length > 0 ? " match your filters" : " available"}`}
-      </p>
-
-      {!isSavedView && (
-        <div className="flex flex-col gap-3 mb-4">
-          <JobSearchBar />
-          <JobFilterChips />
-        </div>
-      )}
-
-      <JobsBrowser
-        initialJobs={initialJobs}
-        initialCursor={initialCursor}
-        savedIds={[...savedSet]}
-        hasFilters={filterKeys.length > 0}
-        savedView={isSavedView}
-      />
+      <JobsBrowser initialGroups={initialGroups} hasMoreCompanies={hasMore} savedIds={[...savedSet]} hasFilters={filterKeys.length > 0} />
     </div>
   );
 }
