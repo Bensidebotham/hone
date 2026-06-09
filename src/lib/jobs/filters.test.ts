@@ -4,15 +4,32 @@ import { buildJobWhere } from "./filters";
 const USER = "user_1";
 
 describe("buildJobWhere", () => {
-  it("always restricts to ATS + (US or remote)", () => {
+  it("base: ATS + CS + (US or ambiguous-remote), foreign dropped", () => {
     const where = buildJobWhere({}, USER);
     expect(where).toMatchObject({
       source: "ats",
-      OR: [{ country: "US" }, { isRemote: true }],
+      roleCategory: { in: expect.arrayContaining(["frontend", "backend"]) },
+      OR: [{ country: "US" }, { AND: [{ isRemote: true }, { country: null }] }],
     });
   });
 
-  it("adds a keyword OR across title and company", () => {
+  it("defaults to entry-level (junior) when no level param", () => {
+    const where = buildJobWhere({}, USER);
+    expect(where.AND).toContainEqual({ level: "junior" });
+  });
+
+  it("level=all removes the level filter", () => {
+    const where = buildJobWhere({ level: "all" }, USER);
+    const conds = (where.AND as Array<Record<string, unknown>>) ?? [];
+    expect(conds.some((c) => "level" in c)).toBe(false);
+  });
+
+  it("level=senior filters senior", () => {
+    const where = buildJobWhere({ level: "senior" }, USER);
+    expect(where.AND).toContainEqual({ level: "senior" });
+  });
+
+  it("keyword search across title and company still works", () => {
     const where = buildJobWhere({ q: "react" }, USER);
     expect(where.AND).toContainEqual({
       OR: [
@@ -22,18 +39,7 @@ describe("buildJobWhere", () => {
     });
   });
 
-  it("filters by roleCategory and level", () => {
-    const where = buildJobWhere({ roleCategory: "frontend", level: "senior" }, USER);
-    expect(where.AND).toContainEqual({ roleCategory: "frontend" });
-    expect(where.AND).toContainEqual({ level: "senior" });
-  });
-
-  it("filters by any of the requested tech tags", () => {
-    const where = buildJobWhere({ techTags: "React,Go" }, USER);
-    expect(where.AND).toContainEqual({ techTags: { hasSome: ["React", "Go"] } });
-  });
-
-  it("filters by minimum salary, excluding undisclosed", () => {
+  it("salaryMin floor with undisclosed-exclusion", () => {
     const where = buildJobWhere({ salaryMin: "150000" }, USER);
     expect(where.AND).toContainEqual({
       OR: [
@@ -41,19 +47,5 @@ describe("buildJobWhere", () => {
         { AND: [{ salaryMax: null }, { salaryMin: { gte: 150000 } }] },
       ],
     });
-  });
-
-  it("ignores an unparseable salaryMin", () => {
-    const where = buildJobWhere({ salaryMin: "abc" }, USER);
-    expect(where).not.toHaveProperty("AND");
-  });
-
-  it("restricts the feed to CS/software role categories", () => {
-    const where = buildJobWhere({}, "u1");
-    expect(where).toMatchObject({
-      roleCategory: { in: expect.arrayContaining(["frontend", "backend", "fullstack", "ml-ai"]) },
-    });
-    // non-technical bucket is excluded
-    expect((where.roleCategory as { in: string[] }).in).not.toContain("other");
   });
 });

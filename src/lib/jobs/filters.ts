@@ -46,11 +46,14 @@ export function buildJobWhere(
   const parsed = FilterParams.safeParse(flat);
   const params = parsed.success ? parsed.data : ({} as z.infer<typeof FilterParams>);
 
-  // Base: ATS-sourced, CS/software roles only, US or remote only.
+  // Base: ATS-sourced, CS/software roles only, US or ambiguous-remote (drops foreign jobs).
   const base: Prisma.JobWhereInput = {
     source: "ats",
     roleCategory: { in: [...CS_ROLE_CATEGORIES] },
-    OR: [{ country: "US" }, { isRemote: true }],
+    OR: [
+      { country: "US" },
+      { AND: [{ isRemote: true }, { country: null }] },
+    ],
   };
 
   const conditions: Prisma.JobWhereInput[] = [];
@@ -79,8 +82,14 @@ export function buildJobWhere(
     conditions.push({ roleCategory: params.roleCategory });
   }
 
-  if (params.level) {
-    conditions.push({ level: params.level });
+  // Entry-level default: no level param → junior; "all" → no filter; else that level.
+  const levelParam = params.level;
+  if (levelParam === "all") {
+    // show all levels
+  } else if (levelParam) {
+    conditions.push({ level: levelParam });
+  } else {
+    conditions.push({ level: "junior" });
   }
 
   const techTags = params.techTags
