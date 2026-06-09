@@ -107,4 +107,13 @@ describe("parseSalaryRange", () => {
   it("returns null bounds for empty input", () => {
     expect(parseSalaryRange(null)).toEqual({ salaryMin: null, salaryMax: null });
   });
+  it("returns null bounds for undefined input", () => {
+    expect(parseSalaryRange(undefined)).toEqual({ salaryMin: null, salaryMax: null });
+  });
+  it("normalizes a reversed range $150k - $120k to min=120000 max=150000", () => {
+    expect(parseSalaryRange("$150k - $120k")).toEqual({ salaryMin: 120000, salaryMax: 150000 });
+  });
+  it("parses a bare-K single value $150k to equal min/max", () => {
+    expect(parseSalaryRange("$150k")).toEqual({ salaryMin: 150000, salaryMax: 150000 });
+  });
 });

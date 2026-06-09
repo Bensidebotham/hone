@@ -84,18 +84,24 @@ function matchSalaryK(text: string | null | undefined): { lo: number; hi: number
   const [, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11] = m;
 
   if (g1 !== undefined && g2 !== undefined && g3 !== undefined && g4 !== undefined) {
-    const lo = fullToK(g1, g2);
-    const hi = fullToK(g3, g4);
+    const a = fullToK(g1, g2);
+    const b = fullToK(g3, g4);
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
     return lo < MIN_K ? null : { lo, hi };
   }
   if (g5 !== undefined && g6 !== undefined) {
-    const lo = toK(g5);
-    const hi = toK(g6);
+    const a = toK(g5);
+    const b = toK(g6);
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
     return lo < MIN_K ? null : { lo, hi };
   }
   if (g7 !== undefined && g8 !== undefined) {
-    const lo = toK(g7);
-    const hi = toK(g8);
+    const a = toK(g7);
+    const b = toK(g8);
+    const lo = Math.min(a, b);
+    const hi = Math.max(a, b);
     return lo < MIN_K ? null : { lo, hi };
   }
   if (g9 !== undefined && g10 !== undefined) {
