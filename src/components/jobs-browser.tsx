@@ -1,31 +1,17 @@
 // src/components/jobs-browser.tsx
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
-import { JobListItem, type JobListItemData } from "@/components/job-list-item";
+import { JobListItem } from "@/components/job-list-item";
 import { JobDetailPane, type JobDetailData } from "@/components/job-detail-pane";
 import { CompanyGroup, type BrowserGroup } from "@/components/company-group";
 import { loadMoreJobs, loadMoreCompanies, getJobDetail } from "@/lib/jobs/actions";
-import { type JobListRow } from "@/lib/jobs/constants";
+import { toBrowserJob, type BrowserJob } from "@/components/job-browser-types";
 
-export interface BrowserJob extends JobListItemData {
-  url: string | null;
-  descriptionText: string;
-  descriptionHtml: string | null;
-}
-
-export function toBrowserJob(row: JobListRow): BrowserJob {
-  return {
-    id: row.id, title: row.title, company: row.company, location: row.location,
-    salary: row.salary, url: row.url,
-    postedAt: row.postedAt ? new Date(row.postedAt).toISOString() : null,
-    techTags: row.techTags, descriptionText: row.descriptionText,
-    descriptionHtml: row.descriptionHtml,
-  };
-}
+export { toBrowserJob, type BrowserJob };
 
 function toDetail(j: BrowserJob): JobDetailData {
   return {
@@ -73,6 +59,8 @@ export function JobsBrowser({
     });
   }, []);
 
+  const fetchedRef = useRef<string | null>(null);
+
   const flatParams = useMemo(() => {
     const f: Record<string, string | undefined> = {};
     sp.forEach((v, k) => { if (k !== "selected") f[k] = v; });
@@ -85,7 +73,8 @@ export function JobsBrowser({
   const selectedJob = selectedId ? rolesById.get(selectedId) ?? null : null;
 
   useEffect(() => {
-    if (selectedId && !rolesById.has(selectedId)) {
+    if (selectedId && !rolesById.has(selectedId) && fetchedRef.current !== selectedId) {
+      fetchedRef.current = selectedId;
       getJobDetail(selectedId).then((row) => {
         if (row) registerRoles([toBrowserJob(row)]);
       });
@@ -124,7 +113,7 @@ export function JobsBrowser({
       topRoles: g.topRoles.map(toBrowserJob),
     }));
     setGroups((p) => [...p, ...newGroups]);
-    newGroups.forEach((g) => registerRoles(g.topRoles));
+    registerRoles(newGroups.flatMap((g) => g.topRoles));
     setCoPage(next);
     setMoreCos(res.hasMore);
     setLoading(false);
@@ -137,8 +126,8 @@ export function JobsBrowser({
     }
     return (
       <EmptyState
-        title="No jobs match your filters"
-        message={hasFilters ? "Try widening your filters, or switch the Level chip to “All levels.”" : "Try the Level chip → “All levels.”"}
+        title={hasFilters ? "No jobs match your filters" : "No entry-level roles right now"}
+        message={hasFilters ? `Try widening your filters, or switch the Level chip to "All levels."` : `Switch the Level chip to "All levels" to see more.`}
       />
     );
   }

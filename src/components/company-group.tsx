@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CompanyLogo } from "@/components/company-logo";
 import { JobListItem } from "@/components/job-list-item";
 import { loadCompanyRoles } from "@/lib/jobs/actions";
-import { toBrowserJob, type BrowserJob } from "@/components/jobs-browser";
+import { toBrowserJob, type BrowserJob } from "@/components/job-browser-types";
 
 export interface BrowserGroup {
   company: string;
