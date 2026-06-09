@@ -77,7 +77,7 @@ export function ApplicationCard({ app }: { app: AppWithJob }) {
       <Tooltip>
         {/* Base UI render prop: pass a <div> so the trigger is not a nested button */}
         <TooltipTrigger render={<div />}>
-          <Card className={`transition-transform hover:-translate-y-0.5 hover:shadow-sm ${isPending ? "opacity-70 transition-opacity" : "transition-opacity"}`}>
+          <Card className={`transition hover:-translate-y-0.5 hover:shadow-sm ${isPending ? "opacity-70" : ""}`}>
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-1">
                 <CardTitle className="text-sm font-semibold leading-snug">

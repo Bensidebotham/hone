@@ -7,8 +7,11 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const prefersReduced = useReducedMotion();
 
-  const initial = prefersReduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 };
-  const animate = { opacity: 1, y: 0 };
+  // Opacity-only fade: avoids holding a CSS transform on the wrapper, which
+  // would create a stacking context that can interfere with the dnd-kit kanban
+  // drag during the brief post-navigation animation window.
+  const initial = prefersReduced ? { opacity: 1 } : { opacity: 0 };
+  const animate = { opacity: 1 };
 
   return (
     <motion.div

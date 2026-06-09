@@ -56,7 +56,7 @@ export default async function ResumePage() {
 
             return (
               <Link key={resume.id} href={`/resume/${resume.id}`}>
-                <Card className="hover:ring-2 hover:ring-ring transition-shadow hover:-translate-y-0.5 cursor-pointer">
+                <Card className="hover:ring-2 hover:ring-ring transition hover:-translate-y-0.5 hover:shadow-sm cursor-pointer">
                   <CardHeader>
                     <CardTitle>{resume.label}</CardTitle>
                     <CardDescription>

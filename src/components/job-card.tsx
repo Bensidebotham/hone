@@ -29,7 +29,7 @@ export function JobCard({ job, saved }: { job: JobCardData; saved: boolean }) {
   }
 
   return (
-    <Card className="transition-transform hover:-translate-y-0.5 hover:shadow-sm">
+    <Card className="transition hover:-translate-y-0.5 hover:shadow-sm">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-0.5">
