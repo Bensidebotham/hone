@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { JobListItem, type JobListItemData } from "@/components/job-list-item";
 import { JobDetailPane, type JobDetailData } from "@/components/job-detail-pane";
-import { loadMoreJobs, type JobListRow } from "@/lib/jobs/actions";
+import { loadMoreJobs } from "@/lib/jobs/actions";
+import { type JobListRow } from "@/lib/jobs/constants";
 
 export interface BrowserJob extends JobListItemData {
   url: string | null;

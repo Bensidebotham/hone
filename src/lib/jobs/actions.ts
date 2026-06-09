@@ -3,22 +3,7 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildJobWhere } from "@/lib/jobs/filters";
-
-export const JOBS_PAGE_SIZE = 25;
-
-export interface JobListRow {
-  id: string;
-  title: string;
-  company: string;
-  location: string | null;
-  url: string | null;
-  salary: string | null;
-  postedAt: Date | null;
-  roleCategory: string | null;
-  level: string | null;
-  techTags: string[];
-  descriptionText: string;
-}
+import { JOBS_PAGE_SIZE, type JobListRow } from "@/lib/jobs/constants";
 
 export async function loadMoreJobs(
   params: Record<string, string | undefined>,
