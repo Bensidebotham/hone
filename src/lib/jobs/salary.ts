@@ -68,54 +68,55 @@ function fmtK(k: number): string {
 
 const MIN_K = 20; // anything below $20K is likely not a salary
 
-export function parseSalary(text: string | null | undefined): string | null {
-  if (!text) return null;
+export interface SalaryRange {
+  salaryMin: number | null;
+  salaryMax: number | null;
+}
 
+/**
+ * Core matcher: returns lo/hi in K (thousands), or null if no salary found.
+ * Shared by parseSalary (string output) and parseSalaryRange (numeric output).
+ */
+function matchSalaryK(text: string | null | undefined): { lo: number; hi: number } | null {
+  if (!text) return null;
   const m = COMBINED.exec(text);
   if (!m) return null;
-
-  // Determine which pattern matched by inspecting which capture groups are set.
-  // MONEY_FULL now captures 2 groups (thousands + 3-digit remainder), so group layout:
-  //   Range $full–$full:   g1(lo-thou), g2(lo-rem), g3(hi-thou), g4(hi-rem)
-  //   Range $k–$k:         g5, g6
-  //   Range bare-k–bare-k: g7, g8
-  //   Single $full:        g9(thou), g10(rem)
-  //   Single $k:           g11
   const [, g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11] = m;
 
   if (g1 !== undefined && g2 !== undefined && g3 !== undefined && g4 !== undefined) {
-    // $120,000 – $150,000  or  $120,500 – $150,750
     const lo = fullToK(g1, g2);
     const hi = fullToK(g3, g4);
-    if (lo < MIN_K) return null;
-    return `${fmtK(lo)}–${fmtK(hi)}`;
+    return lo < MIN_K ? null : { lo, hi };
   }
   if (g5 !== undefined && g6 !== undefined) {
-    // $120k – $150k
     const lo = toK(g5);
     const hi = toK(g6);
-    if (lo < MIN_K) return null;
-    return `${fmtK(lo)}–${fmtK(hi)}`;
+    return lo < MIN_K ? null : { lo, hi };
   }
   if (g7 !== undefined && g8 !== undefined) {
-    // 120k – 150k (bare)
     const lo = toK(g7);
     const hi = toK(g8);
-    if (lo < MIN_K) return null;
-    return `${fmtK(lo)}–${fmtK(hi)}`;
+    return lo < MIN_K ? null : { lo, hi };
   }
   if (g9 !== undefined && g10 !== undefined) {
-    // $150,000  or  $120,500
     const k = fullToK(g9, g10);
-    if (k < MIN_K) return null;
-    return fmtK(k);
+    return k < MIN_K ? null : { lo: k, hi: k };
   }
   if (g11 !== undefined) {
-    // $150k
     const k = toK(g11);
-    if (k < MIN_K) return null;
-    return fmtK(k);
+    return k < MIN_K ? null : { lo: k, hi: k };
   }
-
   return null;
+}
+
+export function parseSalaryRange(text: string | null | undefined): SalaryRange {
+  const r = matchSalaryK(text);
+  if (!r) return { salaryMin: null, salaryMax: null };
+  return { salaryMin: r.lo * 1000, salaryMax: r.hi * 1000 };
+}
+
+export function parseSalary(text: string | null | undefined): string | null {
+  const r = matchSalaryK(text);
+  if (!r) return null;
+  return r.lo === r.hi ? fmtK(r.lo) : `${fmtK(r.lo)}–${fmtK(r.hi)}`;
 }

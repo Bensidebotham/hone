@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseSalary } from "@/lib/jobs/salary";
+import { parseSalary, parseSalaryRange } from "@/lib/jobs/salary";
 
 describe("parseSalary", () => {
   // --- positive matches ---
@@ -88,5 +88,23 @@ describe("parseSalary", () => {
         "Join our team in 2024 and work with 100 engineers across 3 offices."
       )
     ).toBeNull();
+  });
+});
+
+describe("parseSalaryRange", () => {
+  it("parses a dollar-K range to annualized USD ints", () => {
+    expect(parseSalaryRange("$120k – $150k")).toEqual({ salaryMin: 120000, salaryMax: 150000 });
+  });
+  it("parses a full-dollar range", () => {
+    expect(parseSalaryRange("$120,000 to $150,000")).toEqual({ salaryMin: 120000, salaryMax: 150000 });
+  });
+  it("parses a single value as equal min/max", () => {
+    expect(parseSalaryRange("$150,000")).toEqual({ salaryMin: 150000, salaryMax: 150000 });
+  });
+  it("returns null bounds when nothing parseable", () => {
+    expect(parseSalaryRange("competitive salary")).toEqual({ salaryMin: null, salaryMax: null });
+  });
+  it("returns null bounds for empty input", () => {
+    expect(parseSalaryRange(null)).toEqual({ salaryMin: null, salaryMax: null });
   });
 });
