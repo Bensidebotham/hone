@@ -6,7 +6,7 @@ const CARDS_PER_COLUMN = 2;
 
 export default function ApplicationsLoading() {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" aria-hidden="true">
       {/* page heading */}
       <Skeleton className="h-7 w-40 mb-2" />
       <Skeleton className="h-4 w-72 mb-6" />

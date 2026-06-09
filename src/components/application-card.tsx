@@ -90,7 +90,7 @@ export function ApplicationCard({ app }: { app: AppWithJob }) {
                   {...attributes}
                   {...listeners}
                   aria-label="Drag to move"
-                  className="hidden sm:flex shrink-0 cursor-grab touch-none items-center justify-center rounded p-0.5 text-muted-foreground/50 hover:text-muted-foreground active:cursor-grabbing"
+                  className="hidden sm:flex shrink-0 cursor-grab touch-none items-center justify-center rounded p-0.5 text-muted-foreground/50 hover:text-muted-foreground active:cursor-grabbing focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <GripVertical className="h-4 w-4" />
                 </button>

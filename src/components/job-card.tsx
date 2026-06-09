@@ -52,7 +52,7 @@ export function JobCard({ job, saved }: { job: JobCardData; saved: boolean }) {
               aria-label={isSaved ? "Remove bookmark" : "Bookmark job"}
               aria-pressed={isSaved}
               title={isSaved ? "Bookmarked (click to remove)" : "Bookmark this listing"}
-              className="flex flex-col items-center gap-0 text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
+              className="flex flex-col items-center gap-0 text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
             >
               <span className="text-lg leading-none" aria-hidden="true">
                 {isSaved ? "★" : "☆"}

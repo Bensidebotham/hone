@@ -3,7 +3,7 @@ import { SkeletonJobCard } from "@/components/skeleton-job-card";
 
 export default function JobsLoading() {
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl" aria-hidden="true">
       {/* page heading */}
       <Skeleton className="h-7 w-24 mb-2" />
       <Skeleton className="h-4 w-80 mb-6" />

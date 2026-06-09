@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 export function SkeletonJobCard() {
   return (
-    <Card>
+    <Card aria-hidden="true">
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-col gap-1.5 flex-1">
