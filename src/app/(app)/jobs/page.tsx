@@ -6,6 +6,7 @@ import { parseSalary } from "@/lib/jobs/salary";
 import { PasteJobForm } from "@/components/paste-job-form";
 import { JobFilterBar } from "@/components/job-filter-bar";
 import { JobCard } from "@/components/job-card";
+import { EmptyState } from "@/components/empty-state";
 import {
   Card,
   CardContent,
@@ -54,11 +55,17 @@ export default async function JobsPage({
       </div>
 
       {jobs.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {Object.keys(params).length > 0
-            ? "No jobs match your filters."
-            : "No jobs yet — paste one above or wait for the ATS sync to run."}
-        </p>
+        Object.keys(params).length > 0 ? (
+          <EmptyState
+            title="No jobs match your filters"
+            message="Try widening or clearing your filters."
+          />
+        ) : (
+          <EmptyState
+            title="No jobs yet"
+            message="Paste a job above or wait for the next ATS sync."
+          />
+        )
       ) : (
         <div className="flex flex-col gap-3">
           {jobs.map((job) => (

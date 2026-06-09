@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ResumeUpload } from "@/components/resume-upload";
+import { EmptyState } from "@/components/empty-state";
 import {
   Card,
   CardContent,
@@ -37,9 +38,10 @@ export default async function ResumePage() {
       </Card>
 
       {resumes.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No resumes yet — upload one above.
-        </p>
+        <EmptyState
+          title="No resumes yet"
+          message="Upload a resume above to get an AI-powered analysis."
+        />
       ) : (
         <div className="flex flex-col gap-3">
           {resumes.map((resume) => {
