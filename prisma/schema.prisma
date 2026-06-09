@@ -20,6 +20,7 @@ model User {
   applications  Application[]
   healthScores  HealthScore[]
   savedJobs     UserSavedJob[]
+  resumeGoals   ResumeGoal[]
   createdAt     DateTime      @default(now())
 }
 
@@ -66,16 +67,17 @@ model Profile {
 }
 
 model Resume {
-  id        String     @id @default(cuid())
-  userId    String
-  label     String     @default("My Resume")
-  fileUrl   String?
-  text      String
-  version   Int        @default(1)
-  createdAt DateTime   @default(now())
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  analyses  Analysis[]
-  matches   Match[]
+  id          String       @id @default(cuid())
+  userId      String
+  label       String       @default("My Resume")
+  fileUrl     String?
+  text        String
+  version     Int          @default(1)
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  analyses    Analysis[]
+  matches     Match[]
+  resumeGoals ResumeGoal[]
 }
 
 enum AnalysisType {
@@ -183,4 +185,18 @@ model UserSavedJob {
   job     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   @@id([userId, jobId])
+}
+
+model ResumeGoal {
+  id             String    @id @default(cuid())
+  userId         String
+  resumeId       String
+  suggestionText String
+  priority       String?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume         Resume    @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+
+  @@unique([resumeId, suggestionText])
 }
