@@ -62,10 +62,14 @@ export function JobDetailPane({ job }: { job: JobDetailData | null }) {
           // Sanitized at ingest via sanitize-html (allowlisted tags only), so this is safe to render.
           dangerouslySetInnerHTML={{ __html: job.descriptionHtml }}
         />
-      ) : (
+      ) : job.descriptionText?.trim() ? (
         <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
           {job.descriptionText}
         </div>
+      ) : (
+        <p className="text-sm text-muted-foreground italic">
+          No description provided.{job.url ? ' Use “View original ↗” above to read the full posting.' : ""}
+        </p>
       )}
     </div>
   );

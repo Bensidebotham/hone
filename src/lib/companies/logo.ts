@@ -13,7 +13,7 @@ export function companyDomain(company: string): string | null {
 
 /** Logo service URL for a domain (Google's favicon service — no key required). */
 export function logoUrl(domain: string): string {
-  return `https://www.google.com/s2/favicons?sz=64&domain=${domain}`;
+  return `https://www.google.com/s2/favicons?sz=128&domain=${domain}`;
 }
 
 /** Single-character monogram fallback. */
