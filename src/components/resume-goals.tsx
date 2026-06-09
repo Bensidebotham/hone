@@ -62,7 +62,7 @@ export function ResumeGoals({ resumeId, goals }: ResumeGoalsProps) {
         <ProgressValue>{() => `${completed} / ${total} completed`}</ProgressValue>
       </Progress>
 
-      <Accordion defaultValue={["high", "medium", "low"]}>
+      <Accordion defaultValue={["high", "medium", "low"]} multiple>
         {sections
           .filter(({ key }) => groups[key].length > 0)
           .map(({ key, label }) => (
@@ -81,7 +81,6 @@ export function ResumeGoals({ resumeId, goals }: ResumeGoalsProps) {
                           onCheckedChange={(newChecked) => {
                             onToggle(goal.id, newChecked);
                           }}
-                          aria-label={goal.suggestionText}
                         />
                         <label
                           htmlFor={checkboxId}
