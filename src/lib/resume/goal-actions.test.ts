@@ -1,30 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/auth", () => ({ requireUser: vi.fn().mockResolvedValue({ id: "u1" }) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
-const findFirst = vi.fn();
 const updateMany = vi.fn().mockResolvedValue({ count: 1 });
 vi.mock("@/lib/db", () => ({
   prisma: {
     resumeGoal: {
-      findFirst: (...a: any) => findFirst(...a),
       updateMany: (...a: any) => updateMany(...a),
     },
   },
 }));
-import { toggleGoal } from "@/lib/resume/goal-actions";
+import { setGoalCompletion } from "@/lib/resume/goal-actions";
 import { revalidatePath } from "next/cache";
 
-describe("toggleGoal", () => {
+describe("setGoalCompletion", () => {
   beforeEach(() => {
-    findFirst.mockClear();
     updateMany.mockClear();
     vi.mocked(revalidatePath).mockClear();
   });
 
-  it("marks goal complete (null → Date) when completedAt is null", async () => {
-    findFirst.mockResolvedValue({ id: "g1", userId: "u1", completedAt: null });
-
-    await toggleGoal("g1", "r1");
+  it("marks goal complete when completed=true: updateMany with a Date", async () => {
+    await setGoalCompletion("g1", "r1", true);
 
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -34,10 +29,8 @@ describe("toggleGoal", () => {
     );
   });
 
-  it("marks goal incomplete (Date → null) when completedAt is set", async () => {
-    findFirst.mockResolvedValue({ id: "g1", userId: "u1", completedAt: new Date("2026-01-01") });
-
-    await toggleGoal("g1", "r1");
+  it("marks goal incomplete when completed=false: updateMany with null", async () => {
+    await setGoalCompletion("g1", "r1", false);
 
     expect(updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -47,28 +40,15 @@ describe("toggleGoal", () => {
     );
   });
 
-  it("scopes findFirst ownership to userId", async () => {
-    findFirst.mockResolvedValue({ id: "g1", userId: "u1", completedAt: null });
+  it("always scopes where clause to userId (ownership enforcement)", async () => {
+    await setGoalCompletion("g1", "r1", true);
 
-    await toggleGoal("g1", "r1");
-
-    expect(findFirst).toHaveBeenCalledWith({
-      where: { id: "g1", userId: "u1" },
-    });
-  });
-
-  it("does NOT call updateMany if goal not found (ownership enforcement)", async () => {
-    findFirst.mockResolvedValue(null);
-
-    await toggleGoal("g1", "r1");
-
-    expect(updateMany).not.toHaveBeenCalled();
+    const call = updateMany.mock.calls[0][0];
+    expect(call.where).toEqual({ id: "g1", userId: "u1" });
   });
 
   it("calls revalidatePath with /resume/<resumeId>", async () => {
-    findFirst.mockResolvedValue({ id: "g1", userId: "u1", completedAt: null });
-
-    await toggleGoal("g1", "r42");
+    await setGoalCompletion("g1", "r42", true);
 
     expect(revalidatePath).toHaveBeenCalledWith("/resume/r42");
   });

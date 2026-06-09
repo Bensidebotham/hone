@@ -52,6 +52,22 @@ describe("syncGoalsFromAnalysis", () => {
       resumeId_suggestionText: { resumeId: "r1", suggestionText: "Some suggestion" },
     });
   });
+
+  it("does NOT call upsert when suggestions list is empty (no-op)", async () => {
+    await syncGoalsFromAnalysis("r1", []);
+
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("does not throw when two suggestions share the same text (caller may pass dupes)", async () => {
+    const dupes = [
+      { priority: "high" as const, text: "Duplicate suggestion" },
+      { priority: "low" as const, text: "Duplicate suggestion" },
+    ];
+
+    await expect(syncGoalsFromAnalysis("r1", dupes)).resolves.toBeUndefined();
+    expect(upsert).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("listGoals", () => {
