@@ -124,12 +124,26 @@ model Job {
   descriptionText String
   postedAt        DateTime?
   createdAt       DateTime      @default(now())
+  // Enrichment (heuristic, populated at ingest)
+  country         String?
+  isRemote        Boolean       @default(false)
+  roleCategory    String?
+  level           String?
+  techTags        String[]
+  salaryMin       Int?
+  salaryMax       Int?
   user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   matches         Match[]
   applications    Application[]
   savedJobs       UserSavedJob[]
 
   @@unique([source, externalId])
+  @@index([country])
+  @@index([isRemote])
+  @@index([roleCategory])
+  @@index([level])
+  @@index([salaryMin])
+  @@index([techTags], type: Gin)
 }
 
 model Match {
