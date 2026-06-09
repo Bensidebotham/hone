@@ -28,6 +28,11 @@ import { test, expect } from "@playwright/test";
 //     const jobId = await firstItem.getAttribute("data-job-id");
 //     await firstItem.click();
 //     await expect(page).toHaveURL(new RegExp(`selected=${jobId}`));
+//
+//     // Level chip defaults to Entry-level, with an All-levels option
+//     await expect(page.getByLabel("level")).toContainText("Entry-level");
+//     // Feed is grouped by company with an expand control
+//     await page.getByRole("button", { name: /Show \d+ more at/ }).first().click();
 //   });
 // });
 
