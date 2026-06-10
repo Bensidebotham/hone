@@ -46,6 +46,16 @@ export default async function JobsPage({
   const isSavedView = params.saved === "true";
   const filterKeys = Object.keys(rawParams).filter((k) => k !== "selected");
 
+  // Remount the browser whenever the filters change (but NOT when only `selected`
+  // changes), so its useState-seeded list/cursor resets to the new server query.
+  // Soft navigation keeps the client component mounted, so without this the list
+  // would stay frozen on the first filter set.
+  const feedKey = Object.entries(rawParams)
+    .filter(([k]) => k !== "selected")
+    .map(([k, v]) => `${k}=${Array.isArray(v) ? v.join(",") : v ?? ""}`)
+    .sort()
+    .join("&");
+
   if (isSavedView) {
     const where = { id: { in: [...savedSet] } };
     const [rows, totalCount] = await Promise.all([
@@ -57,7 +67,7 @@ export default async function JobsPage({
     return (
       <div className="max-w-6xl">
         <JobsHeader savedCount={savedSet.size} totalCount={totalCount} isSavedView filterKeys={filterKeys} />
-        <JobsBrowser savedView initialJobs={initialJobs} initialCursor={initialCursor} savedIds={[...savedSet]} hasFilters={filterKeys.length > 0} />
+        <JobsBrowser key={feedKey} savedView initialJobs={initialJobs} initialCursor={initialCursor} savedIds={[...savedSet]} hasFilters={filterKeys.length > 0} />
       </div>
     );
   }
@@ -77,7 +87,7 @@ export default async function JobsPage({
         <JobSearchBar />
         <JobFilterChips />
       </div>
-      <JobsBrowser initialJobs={initialJobs} initialCursor={initialCursor} savedIds={[...savedSet]} hasFilters={filterKeys.length > 0} />
+      <JobsBrowser key={feedKey} initialJobs={initialJobs} initialCursor={initialCursor} savedIds={[...savedSet]} hasFilters={filterKeys.length > 0} />
     </div>
   );
 }
