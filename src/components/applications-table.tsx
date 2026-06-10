@@ -88,9 +88,8 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
     if (app.status === next) return;
     const prevStatus = app.status;
     const prevAppliedAt = app.appliedAt;
-    // Mirror the server: applying for the first time stamps the applied date now.
-    const optimisticAppliedAt =
-      next === "applied" && !app.appliedAt ? new Date() : app.appliedAt;
+    // Mirror the server: moving to Applied (re-)stamps the applied date to now.
+    const optimisticAppliedAt = next === "applied" ? new Date() : app.appliedAt;
     setApps((prev) =>
       prev.map((a) =>
         a.id === app.id ? { ...a, status: next, appliedAt: optimisticAppliedAt } : a
@@ -142,6 +141,8 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
 
   function handleDelete(app: AppWithJob) {
     setApps((prev) => prev.filter((a) => a.id !== app.id));
+    // Close the detail drawer if it's showing the row we just removed.
+    if (detail?.id === app.id) setDetailOpen(false);
     setError(null);
     pendingRef.current++;
     startTransition(async () => {

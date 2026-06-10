@@ -5,12 +5,21 @@ import type { KanbanStatus } from "@/lib/applications/kanban";
 import { Menu, MenuTrigger, MenuContent, MenuItem } from "@/components/ui/menu";
 import { cn } from "@/lib/utils";
 
+/** Status dot colors — shared so other surfaces (e.g. the row context menu) stay in sync. */
+export const STATUS_DOT: Record<KanbanStatus, string> = {
+  saved: "bg-[#9aa0b0]",
+  applied: "bg-[#7c63ec]",
+  interviewing: "bg-[#e0a818]",
+  offer: "bg-[#3bbf52]",
+  rejected: "bg-[#d57272]",
+};
+
 const STYLES: Record<KanbanStatus, { pill: string; dot: string }> = {
-  saved: { pill: "bg-[#f0f1f5] text-[#5b6275]", dot: "bg-[#9aa0b0]" },
-  applied: { pill: "bg-accent text-accent-foreground", dot: "bg-[#7c63ec]" },
-  interviewing: { pill: "bg-[#fdf4d8] text-[#9a7212]", dot: "bg-[#e0a818]" },
-  offer: { pill: "bg-[#def6e0] text-[#268a3a]", dot: "bg-[#3bbf52]" },
-  rejected: { pill: "bg-[#f8e6e6] text-[#b14a4a]", dot: "bg-[#d57272]" },
+  saved: { pill: "bg-[#f0f1f5] text-[#5b6275]", dot: STATUS_DOT.saved },
+  applied: { pill: "bg-accent text-accent-foreground", dot: STATUS_DOT.applied },
+  interviewing: { pill: "bg-[#fdf4d8] text-[#9a7212]", dot: STATUS_DOT.interviewing },
+  offer: { pill: "bg-[#def6e0] text-[#268a3a]", dot: STATUS_DOT.offer },
+  rejected: { pill: "bg-[#f8e6e6] text-[#b14a4a]", dot: STATUS_DOT.rejected },
 };
 
 const LABELS: Record<KanbanStatus, string> = Object.fromEntries(

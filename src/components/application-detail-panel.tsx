@@ -36,6 +36,7 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
+  const [localStatus, setLocalStatus] = useState<KanbanStatus>("saved");
   const [isPending, startTransition] = useTransition();
 
   // Reset transient UI whenever a different application is shown or the drawer closes.
@@ -43,6 +44,7 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
     setError(null);
     setEditing(false);
     setPendingAction(null);
+    if (app) setLocalStatus(app.status as KanbanStatus);
   }, [app?.id, open]);
 
   if (!app) return null;
@@ -89,11 +91,14 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
   }
 
   function handleStatus(next: KanbanStatus) {
-    if (next === app!.status) return;
+    if (next === localStatus) return;
+    const prev = localStatus;
+    setLocalStatus(next); // optimistic — the panel holds a frozen snapshot of `app`
     startTransition(async () => {
       try {
         await updateStatus(app!.id, next);
       } catch {
+        setLocalStatus(prev);
         setError("Could not update status.");
       }
     });
@@ -120,7 +125,7 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <StatusPill status={app.status as KanbanStatus} onChange={handleStatus} />
+            <StatusPill status={localStatus} onChange={handleStatus} />
             <span className="text-sm text-muted-foreground">
               {app.job.salary ?? "—"}
               {app.job.location ? ` · ${app.job.location}` : ""}

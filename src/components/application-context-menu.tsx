@@ -12,16 +12,9 @@ import {
   ContextMenuSubmenuContent,
 } from "@/components/ui/context-menu";
 import { KANBAN_COLUMNS, type KanbanStatus } from "@/lib/applications/kanban";
+import { STATUS_DOT } from "@/components/status-pill";
 import type { AppWithJob } from "@/app/(app)/applications/page";
 import { cn } from "@/lib/utils";
-
-const DOT: Record<KanbanStatus, string> = {
-  saved: "bg-[#9aa0b0]",
-  applied: "bg-[#7c63ec]",
-  interviewing: "bg-[#e0a818]",
-  offer: "bg-[#3bbf52]",
-  rejected: "bg-[#d57272]",
-};
 
 interface Props {
   app: AppWithJob;
@@ -71,7 +64,7 @@ export function ApplicationContextMenu({
                 disabled={app.status === status}
                 onClick={() => onChangeStatus(status)}
               >
-                <span className={cn("size-1.5 rounded-full", DOT[status])} />
+                <span className={cn("size-1.5 rounded-full", STATUS_DOT[status])} />
                 {label}
               </ContextMenuItem>
             ))}
