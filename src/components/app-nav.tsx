@@ -12,10 +12,10 @@ import {
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/applications", label: "Applications", icon: ClipboardList },
+  { href: "/jobs", label: "Jobs", icon: Briefcase },
   { href: "/resume", label: "Resume", icon: FileText },
   { href: "/profile", label: "Profile", icon: UserRound },
-  { href: "/jobs", label: "Jobs", icon: Briefcase },
-  { href: "/applications", label: "Applications", icon: ClipboardList },
 ] as const;
 
 export function AppNav() {
