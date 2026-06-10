@@ -37,6 +37,17 @@ export const AGGREGATOR_SOURCES: AggregatorSource[] = [
   },
 ];
 
+export async function fetchAggregator(
+  src: AggregatorSource,
+  opts: { fetchFn?: typeof fetch } = {}
+): Promise<AggregatorJob[]> {
+  const f = opts.fetchFn ?? fetch;
+  const res = await f(src.url, { headers: { "User-Agent": AGGREGATOR_USER_AGENT } });
+  if (!res.ok) return [];
+  const raw = await res.json();
+  return parseListings(raw, src);
+}
+
 export function parseListings(raw: unknown, src: AggregatorSource): AggregatorJob[] {
   if (!Array.isArray(raw)) return [];
   const out: AggregatorJob[] = [];
