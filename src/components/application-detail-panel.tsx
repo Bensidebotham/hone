@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { Trash2 } from "lucide-react";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -123,9 +124,12 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
             <Button type="button" variant="destructive" onClick={handleDelete} disabled={isPending}>
               <Trash2 data-icon="inline-start" /> {pendingAction === "delete" ? "Deleting…" : "Delete"}
             </Button>
-            <Button type="submit" disabled={isPending}>
-              {pendingAction === "save" ? "Saving…" : "Save changes"}
-            </Button>
+            <div className="flex gap-2">
+              <DialogClose render={<Button type="button" variant="ghost">Cancel</Button>} />
+              <Button type="submit" disabled={isPending}>
+                {pendingAction === "save" ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

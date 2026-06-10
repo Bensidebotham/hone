@@ -23,7 +23,7 @@ test.describe("applications power table (authenticated)", () => {
   test.skip(!authed, "no seeded auth state; skipping authenticated flow");
   test.use({ storageState: STORAGE });
 
-  test("add a job manually, change status, then delete it", async ({ page }) => {
+  test("add a job manually, then delete it", async ({ page }) => {
     await page.goto("/applications");
 
     // Add

@@ -71,15 +71,28 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
 
   function handleStatus(app: AppWithJob, next: KanbanStatus) {
     if (app.status === next) return;
-    const snapshot = apps;
-    setApps((prev) => prev.map((a) => (a.id === app.id ? { ...a, status: next } : a)));
+    const prevStatus = app.status;
+    const prevAppliedAt = app.appliedAt;
+    // Mirror the server: applying for the first time stamps the applied date now.
+    const optimisticAppliedAt =
+      next === "applied" && !app.appliedAt ? new Date() : app.appliedAt;
+    setApps((prev) =>
+      prev.map((a) =>
+        a.id === app.id ? { ...a, status: next, appliedAt: optimisticAppliedAt } : a
+      )
+    );
     setError(null);
     pendingRef.current++;
     startTransition(async () => {
       try {
         await updateStatus(app.id, next);
       } catch {
-        setApps(snapshot);
+        // Revert only this row so concurrent changes to other rows survive.
+        setApps((prev) =>
+          prev.map((a) =>
+            a.id === app.id ? { ...a, status: prevStatus, appliedAt: prevAppliedAt } : a
+          )
+        );
         setError("Failed to update status. Please try again.");
       } finally {
         pendingRef.current--;
@@ -180,7 +193,10 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
                     key={app.id}
                     onClick={() => openDetail(app)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") openDetail(app);
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        openDetail(app);
+                      }
                     }}
                     tabIndex={0}
                     className="cursor-pointer border-t border-border/60 text-sm transition hover:bg-muted/30 focus-visible:bg-muted/40 focus-visible:outline-none"
