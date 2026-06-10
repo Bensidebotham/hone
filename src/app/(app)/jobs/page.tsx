@@ -16,8 +16,14 @@ export const dynamic = "force-dynamic";
 function JobsHeader({ savedCount, totalCount, isSavedView, filterKeys }: { savedCount: number; totalCount: number; isSavedView: boolean; filterKeys: string[] }) {
   return (
     <>
-      <h1 className="text-2xl font-semibold mb-1">Jobs</h1>
-      <p className="text-muted-foreground mb-4">Entry-level US software roles, grouped by company.</p>
+      <div className="mb-4">
+        <p className="text-sm font-semibold text-primary">Jobs</p>
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          Find your next role
+          <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-highlight align-middle" aria-hidden="true" />
+        </h1>
+        <p className="text-muted-foreground mt-1">Entry-level US software roles, grouped by company.</p>
+      </div>
       <div className="mb-3"><JobScopeTabs savedCount={savedCount} /></div>
       <p className="text-sm text-muted-foreground mb-3">
         {isSavedView

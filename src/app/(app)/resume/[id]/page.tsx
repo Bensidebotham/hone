@@ -48,10 +48,13 @@ export default async function ResumeDetailPage({
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold mb-1">{resume.label}</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Uploaded {new Date(resume.createdAt).toLocaleDateString()}
-      </p>
+      <div className="mb-6">
+        <p className="text-sm font-semibold text-primary">Resume</p>
+        <h1 className="text-3xl font-extrabold tracking-tight">{resume.label}</h1>
+        <p className="text-muted-foreground mt-1">
+          Uploaded {new Date(resume.createdAt).toLocaleDateString()}
+        </p>
+      </div>
 
       {!analysis && (
         <Card>

@@ -32,10 +32,13 @@ export default async function ProfilePage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold mb-1">Profile Analysis</h1>
-      <p className="text-sm text-muted-foreground mb-8">
-        Get AI feedback on your LinkedIn presence and personal site.
-      </p>
+      <div className="mb-8">
+        <p className="text-sm font-semibold text-primary">Profile</p>
+        <h1 className="text-3xl font-extrabold tracking-tight">Profile Analysis</h1>
+        <p className="text-muted-foreground mt-1">
+          Get AI feedback on your LinkedIn presence and personal site.
+        </p>
+      </div>
 
       <div className="flex flex-col gap-10">
         {/* ── LinkedIn Section ── */}

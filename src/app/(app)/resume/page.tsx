@@ -21,11 +21,14 @@ export default async function ResumePage() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-semibold mb-1">Resumes</h1>
-      <p className="text-muted-foreground mb-6">
-        Upload a resume to get an AI-powered analysis with ATS feedback,
-        keyword gaps, and improvement suggestions.
-      </p>
+      <div className="mb-6">
+        <p className="text-sm font-semibold text-primary">Resume</p>
+        <h1 className="text-3xl font-extrabold tracking-tight">Resumes</h1>
+        <p className="text-muted-foreground mt-1">
+          Upload a resume to get an AI-powered analysis with ATS feedback,
+          keyword gaps, and improvement suggestions.
+        </p>
+      </div>
 
       <Card className="mb-8">
         <CardHeader>
@@ -56,7 +59,7 @@ export default async function ResumePage() {
 
             return (
               <Link key={resume.id} href={`/resume/${resume.id}`}>
-                <Card className="hover:ring-2 hover:ring-ring transition hover:-translate-y-0.5 hover:shadow-sm cursor-pointer">
+                <Card className="hover:ring-2 hover:ring-ring transition-shadow hover:shadow-md hover:-translate-y-0.5 cursor-pointer">
                   <CardHeader>
                     <CardTitle>{resume.label}</CardTitle>
                     <CardDescription>

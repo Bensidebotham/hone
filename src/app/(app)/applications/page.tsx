@@ -17,10 +17,13 @@ export default async function ApplicationsPage() {
 
   return (
     <div className="overflow-x-auto">
-      <h1 className="text-2xl font-semibold mb-1">Applications</h1>
-      <p className="text-sm text-muted-foreground mb-6">
-        Track your job applications across every stage of the pipeline.
-      </p>
+      <div className="mb-6">
+        <p className="text-sm font-semibold text-primary">Tracker</p>
+        <h1 className="text-3xl font-extrabold tracking-tight">Applications</h1>
+        <p className="text-muted-foreground mt-1">
+          Track your job applications across every stage of the pipeline.
+        </p>
+      </div>
       <ApplicationKanban applications={apps} />
     </div>
   );
