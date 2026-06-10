@@ -4,6 +4,8 @@ import {
   filterApplications,
   sortApplications,
   summarize,
+  nextSort,
+  DEFAULT_DIR,
   type TableFilter,
   type TableSort,
 } from "./table";
@@ -16,6 +18,7 @@ function makeApp(
     title?: string;
     appliedAt?: Date | null;
     updatedAt?: Date;
+    salaryMin?: number | null;
   } = {}
 ): AppWithJob {
   const updatedAt = opts.updatedAt ?? new Date("2024-01-01");
@@ -35,6 +38,7 @@ function makeApp(
       location: null,
       url: null,
       salary: null,
+      salaryMin: opts.salaryMin ?? null,
       source: "paste",
     },
   } as unknown as AppWithJob;
@@ -80,7 +84,7 @@ describe("sortApplications", () => {
       makeApp("old", "saved", { updatedAt: new Date("2024-01-01") }),
       makeApp("new", "saved", { updatedAt: new Date("2024-03-01") }),
     ];
-    expect(sortApplications(apps, "lastActivity").map((a) => a.id)).toEqual(["new", "old"]);
+    expect(sortApplications(apps, "lastActivity", "desc").map((a) => a.id)).toEqual(["new", "old"]);
   });
 
   it("applied sorts by appliedAt desc with nulls last", () => {
@@ -89,7 +93,7 @@ describe("sortApplications", () => {
       makeApp("jan", "applied", { appliedAt: new Date("2024-01-01") }),
       makeApp("mar", "applied", { appliedAt: new Date("2024-03-01") }),
     ];
-    expect(sortApplications(apps, "applied").map((a) => a.id)).toEqual(["mar", "jan", "null"]);
+    expect(sortApplications(apps, "applied", "desc").map((a) => a.id)).toEqual(["mar", "jan", "null"]);
   });
 
   it("company sorts A→Z case-insensitively", () => {
@@ -97,13 +101,13 @@ describe("sortApplications", () => {
       makeApp("1", "saved", { company: "zeta" }),
       makeApp("2", "saved", { company: "Alpha" }),
     ];
-    expect(sortApplications(apps, "company").map((a) => a.id)).toEqual(["2", "1"]);
+    expect(sortApplications(apps, "company", "asc").map((a) => a.id)).toEqual(["2", "1"]);
   });
 
   it("does not mutate the input array", () => {
     const apps = [makeApp("a", "saved"), makeApp("b", "saved")];
     const copy = [...apps];
-    sortApplications(apps, "company");
+    sortApplications(apps, "company", "asc");
     expect(apps).toEqual(copy);
   });
 });
@@ -129,3 +133,55 @@ describe("summarize", () => {
 // Type guards so the test fails to compile if the public types drift
 const _f: TableFilter = "active";
 const _s: TableSort = "lastActivity";
+
+describe("sortApplications — new keys & direction", () => {
+  it("sorts by company asc and desc", () => {
+    const apps = [
+      makeApp("1", "applied", { company: "Zeta" }),
+      makeApp("2", "applied", { company: "Alpha" }),
+    ];
+    expect(sortApplications(apps, "company", "asc").map((a) => a.id)).toEqual(["2", "1"]);
+    expect(sortApplications(apps, "company", "desc").map((a) => a.id)).toEqual(["1", "2"]);
+  });
+
+  it("sorts by status using pipeline rank", () => {
+    const apps = [
+      makeApp("rej", "rejected"),
+      makeApp("sav", "saved"),
+      makeApp("int", "interviewing"),
+    ];
+    expect(sortApplications(apps, "status", "asc").map((a) => a.id)).toEqual(["sav", "int", "rej"]);
+    expect(sortApplications(apps, "status", "desc").map((a) => a.id)).toEqual(["rej", "int", "sav"]);
+  });
+
+  it("sorts by applied date with nulls always last, both directions", () => {
+    const apps = [
+      makeApp("none", "saved", { appliedAt: null }),
+      makeApp("old", "applied", { appliedAt: new Date("2025-01-01") }),
+      makeApp("new", "applied", { appliedAt: new Date("2025-06-01") }),
+    ];
+    expect(sortApplications(apps, "applied", "desc").map((a) => a.id)).toEqual(["new", "old", "none"]);
+    expect(sortApplications(apps, "applied", "asc").map((a) => a.id)).toEqual(["old", "new", "none"]);
+  });
+
+  it("sorts by salary using salaryMin with nulls always last", () => {
+    const apps = [
+      makeApp("none", "applied", { salaryMin: null }),
+      makeApp("lo", "applied", { salaryMin: 50 }),
+      makeApp("hi", "applied", { salaryMin: 120 }),
+    ];
+    expect(sortApplications(apps, "salary", "desc").map((a) => a.id)).toEqual(["hi", "lo", "none"]);
+    expect(sortApplications(apps, "salary", "asc").map((a) => a.id)).toEqual(["lo", "hi", "none"]);
+  });
+});
+
+describe("nextSort", () => {
+  it("flips direction when the same key is clicked", () => {
+    expect(nextSort("company", "asc", "company")).toEqual({ key: "company", dir: "desc" });
+    expect(nextSort("company", "desc", "company")).toEqual({ key: "company", dir: "asc" });
+  });
+  it("uses the key's default direction when a new key is clicked", () => {
+    expect(nextSort("company", "asc", "applied")).toEqual({ key: "applied", dir: DEFAULT_DIR.applied });
+    expect(nextSort("applied", "asc", "salary")).toEqual({ key: "salary", dir: DEFAULT_DIR.salary });
+  });
+});

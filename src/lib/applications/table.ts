@@ -1,7 +1,44 @@
 import type { AppWithJob } from "@/app/(app)/applications/page";
 
 export type TableFilter = "all" | "active" | "saved";
-export type TableSort = "lastActivity" | "applied" | "company";
+export type TableSort = "company" | "status" | "applied" | "salary" | "lastActivity";
+export type SortDir = "asc" | "desc";
+
+export const DEFAULT_DIR: Record<TableSort, SortDir> = {
+  company: "asc",
+  status: "asc",
+  applied: "desc",
+  salary: "desc",
+  lastActivity: "desc",
+};
+
+const STATUS_RANK: Record<string, number> = {
+  saved: 0,
+  applied: 1,
+  interviewing: 2,
+  offer: 3,
+  rejected: 4,
+};
+
+/** Decide the next {key, dir} when a column/control is chosen. */
+export function nextSort(
+  currentKey: TableSort,
+  currentDir: SortDir,
+  clickedKey: TableSort
+): { key: TableSort; dir: SortDir } {
+  if (clickedKey === currentKey) {
+    return { key: clickedKey, dir: currentDir === "asc" ? "desc" : "asc" };
+  }
+  return { key: clickedKey, dir: DEFAULT_DIR[clickedKey] };
+}
+
+/** Comparator that keeps nulls at the end in both directions. */
+function nullsLast(a: number | null, b: number | null, flip: number): number {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1; // a after b
+  if (b === null) return -1; // a before b
+  return flip * (a - b);
+}
 
 const ACTIVE_STATUSES = new Set(["applied", "interviewing", "offer"]);
 
@@ -22,23 +59,43 @@ export function filterApplications(
   });
 }
 
-/** Return a new, sorted array. Never mutates the input. */
-export function sortApplications(apps: AppWithJob[], sort: TableSort): AppWithJob[] {
+/**
+ * Return a new, sorted array. Never mutates the input.
+ * For `applied`/`salary`, rows with a null value always sort to the end,
+ * regardless of direction — direction orders only the rows that have a value.
+ */
+export function sortApplications(
+  apps: AppWithJob[],
+  key: TableSort,
+  dir: SortDir
+): AppWithJob[] {
+  const flip = dir === "asc" ? 1 : -1;
   const copy = [...apps];
-  switch (sort) {
+
+  switch (key) {
     case "company":
-      return copy.sort((a, b) =>
-        a.job.company.toLowerCase().localeCompare(b.job.company.toLowerCase())
-      );
-    case "applied":
       return copy.sort((a, b) => {
-        const av = a.appliedAt ? a.appliedAt.getTime() : -Infinity;
-        const bv = b.appliedAt ? b.appliedAt.getTime() : -Infinity;
-        return bv - av; // desc, nulls (-Infinity) last
+        const primary = a.job.company.toLowerCase().localeCompare(b.job.company.toLowerCase());
+        if (primary !== 0) return flip * primary;
+        return flip * a.job.title.toLowerCase().localeCompare(b.job.title.toLowerCase());
       });
+    case "status":
+      return copy.sort((a, b) => {
+        const primary = (STATUS_RANK[a.status] ?? 99) - (STATUS_RANK[b.status] ?? 99);
+        if (primary !== 0) return flip * primary;
+        return flip * a.job.company.toLowerCase().localeCompare(b.job.company.toLowerCase());
+      });
+    case "applied":
+      return copy.sort((a, b) =>
+        nullsLast(a.appliedAt?.getTime() ?? null, b.appliedAt?.getTime() ?? null, flip)
+      );
+    case "salary":
+      return copy.sort((a, b) =>
+        nullsLast(a.job.salaryMin ?? null, b.job.salaryMin ?? null, flip)
+      );
     case "lastActivity":
     default:
-      return copy.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+      return copy.sort((a, b) => flip * (a.updatedAt.getTime() - b.updatedAt.getTime()));
   }
 }
 
