@@ -160,6 +160,21 @@ Built in this order so the UI lands on good, plentiful data.
 - Internships reachable in one filter click; not shown by default.
 - Feed is a flat, scrollable, newest-first list; no company-grouped default remains.
 
+## Compliance & rate-limiting (hard requirement)
+
+The user's explicit condition: **no risk of being banned from any site; only public APIs and
+open-source data.**
+
+- **Only official public ATS APIs** (Greenhouse / Lever / Ashby) and **open-source GitHub lists**
+  are used. No scraping of LinkedIn, Indeed, or any site whose ToS prohibits automated access.
+  "LinkedIn-style" refers to the UX only.
+- ATS endpoints are the providers' intended public job-board feeds; aggregator data is fetched as
+  a public `listings.json` raw file.
+- Polite-citizen practices: a real identifying `User-Agent`, conditional/cached requests
+  (ETag / If-None-Match where supported), sane cadence (hourly is already very light), and
+  honoring any rate-limit / `Retry-After` headers with backoff.
+- Verify each aggregator repo's license and attribute as required.
+
 ## Out of scope
 
 - Visa sponsorship filtering.
