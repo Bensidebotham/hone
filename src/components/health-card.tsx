@@ -58,7 +58,7 @@ export function HealthCard({ composite, components }: HealthCardProps) {
           </div>
         </div>
         <div className="space-y-2.5 pt-1 border-t border-border">
-          <ScoreItem label="Resume" score={components.resume} href="/resume" />
+          <ScoreItem label="Resume" score={components.resume} href="/profile" />
           <ScoreItem
             label="LinkedIn"
             score={components.linkedin}

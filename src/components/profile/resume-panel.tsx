@@ -1,5 +1,5 @@
-import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { ResumeUpload } from "@/components/resume-upload";
 import { EmptyState } from "@/components/empty-state";
 import {
@@ -9,28 +9,15 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import Link from "next/link";
 
-export default async function ResumePage() {
-  const user = await requireUser();
-  const resumes = await prisma.resume.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    include: { analyses: { orderBy: { createdAt: "desc" }, take: 1 } },
-  });
+type ResumeWithAnalysis = Prisma.ResumeGetPayload<{
+  include: { analyses: true };
+}>;
 
+export function ResumePanel({ resumes }: { resumes: ResumeWithAnalysis[] }) {
   return (
-    <div className="max-w-3xl">
-      <div className="mb-6">
-        <p className="text-sm font-semibold text-primary">Resume</p>
-        <h1 className="text-3xl font-extrabold tracking-tight">Resumes</h1>
-        <p className="text-muted-foreground mt-1">
-          Upload a resume to get an AI-powered analysis with ATS feedback,
-          keyword gaps, and improvement suggestions.
-        </p>
-      </div>
-
-      <Card className="mb-8">
+    <div className="flex flex-col gap-8">
+      <Card>
         <CardHeader>
           <CardTitle>Upload a Resume</CardTitle>
           <CardDescription>Accepts .pdf, .docx, or .txt</CardDescription>

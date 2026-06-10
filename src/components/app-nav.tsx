@@ -4,19 +4,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  FileText,
   UserRound,
   Briefcase,
   ClipboardList,
+  type LucideIcon,
 } from "lucide-react";
 
-const navItems = [
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  // Extra path prefixes that should also mark this item active (e.g. deep routes).
+  match?: string[];
+};
+
+const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/applications", label: "Applications", icon: ClipboardList },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
-  { href: "/resume", label: "Resume", icon: FileText },
-  { href: "/profile", label: "Profile", icon: UserRound },
-] as const;
+  { href: "/profile", label: "Profile", icon: UserRound, match: ["/resume"] },
+];
 
 export function AppNav() {
   const pathname = usePathname();
@@ -31,8 +38,9 @@ export function AppNav() {
         <span className="h-1.5 w-1.5 rounded-full bg-highlight" aria-hidden="true" />
       </Link>
 
-      {navItems.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(`${href}/`);
+      {navItems.map(({ href, label, icon: Icon, match }) => {
+        const matches = (p: string) => pathname === p || pathname.startsWith(`${p}/`);
+        const active = matches(href) || (match?.some(matches) ?? false);
         return (
           <Link
             key={href}
