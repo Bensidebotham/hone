@@ -4,11 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3050",
+    "dev:trigger": "pnpm dlx trigger.dev@4 dev",
+    "dev:all": "concurrently -k -n next,trigger -c blue.bold,magenta.bold \"pnpm dev\" \"pnpm dev:trigger\"",
+    "poll": "npx tsx --tsconfig tsconfig.json --env-file=.env scripts/run-poll.ts",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
+    "deploy:trigger": "pnpm dlx trigger.dev@4 deploy",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -61,6 +65,7 @@
     "@types/sanitize-html": "^2.16.1",
     "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^6.0.2",
+    "concurrently": "^10.0.3",
     "jsdom": "^29.1.1",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
