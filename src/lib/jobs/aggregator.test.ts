@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseListings, fetchAggregator, type AggregatorSource } from "./aggregator";
+import { parseListings, fetchAggregator, resolveAggregatorClassification, type AggregatorSource } from "./aggregator";
 
 const NEWGRAD: AggregatorSource = {
   name: "Simplify New-Grad", url: "https://example/listings.json",
@@ -69,5 +69,36 @@ describe("fetchAggregator", () => {
   it("returns [] on non-200 (e.g. 404 for a not-yet-created repo)", async () => {
     const fetchFn = (async () => new Response("Not Found", { status: 404 })) as unknown as typeof fetch;
     expect(await fetchAggregator(SRC, { fetchFn })).toEqual([]);
+  });
+});
+
+describe("resolveAggregatorClassification", () => {
+  const newgrad = { level: "junior" as const, employmentType: "fulltime" as const };
+  const intern = { level: "intern" as const, employmentType: "internship" as const };
+
+  it("keeps a title's senior level so it is excluded from the new-grad feed", () => {
+    expect(resolveAggregatorClassification({ level: "senior", employmentType: "fulltime" }, newgrad))
+      .toEqual({ level: "senior", employmentType: "fulltime" });
+  });
+
+  it("keeps staff/lead/manager title levels (does not force junior)", () => {
+    expect(resolveAggregatorClassification({ level: "staff", employmentType: "fulltime" }, newgrad).level).toBe("staff");
+    expect(resolveAggregatorClassification({ level: "lead", employmentType: "fulltime" }, newgrad).level).toBe("lead");
+    expect(resolveAggregatorClassification({ level: "manager", employmentType: "fulltime" }, newgrad).level).toBe("manager");
+  });
+
+  it("falls back to the list's level when the title has no level signal", () => {
+    expect(resolveAggregatorClassification({ level: null, employmentType: "fulltime" }, newgrad))
+      .toEqual({ level: "junior", employmentType: "fulltime" });
+  });
+
+  it("treats an intern-titled role as an internship even from the new-grad list", () => {
+    expect(resolveAggregatorClassification({ level: "intern", employmentType: "internship" }, newgrad))
+      .toEqual({ level: "intern", employmentType: "internship" });
+  });
+
+  it("keeps an unlabeled role from the internship list as an internship", () => {
+    expect(resolveAggregatorClassification({ level: null, employmentType: "fulltime" }, intern))
+      .toEqual({ level: "intern", employmentType: "internship" });
   });
 });

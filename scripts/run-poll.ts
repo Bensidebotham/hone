@@ -7,7 +7,7 @@ import { prisma } from "@/lib/db";
 import { BOARDS } from "@/lib/jobs/boards.config";
 import { fetchBoard } from "@/lib/jobs/fetchers";
 import { enrichJob } from "@/lib/jobs/enrich";
-import { AGGREGATOR_SOURCES, fetchAggregator } from "@/lib/jobs/aggregator";
+import { AGGREGATOR_SOURCES, fetchAggregator, resolveAggregatorClassification } from "@/lib/jobs/aggregator";
 import { normalizeUrl } from "@/lib/jobs/url";
 
 async function main() {
@@ -65,19 +65,21 @@ async function main() {
       const norm = normalizeUrl(j.url);
       if (norm && atsUrls.has(norm)) continue; // dedup: ATS record wins
       const e = enrichJob({ title: j.title, location: j.location, descriptionText: "", salary: null });
+      // Trust the title's level/type when it has a signal; fall back to the list's intent.
+      const { level, employmentType } = resolveAggregatorClassification(e, j);
       await prisma.job.upsert({
         where: { source_externalId: { source: "aggregator", externalId: j.externalId } },
         create: {
           source: "aggregator", externalId: j.externalId, company: j.company, title: j.title,
           location: j.location, url: j.url, descriptionText: "", descriptionHtml: "",
           postedAt: j.postedAt, salary: null, country: e.country, isRemote: e.isRemote,
-          roleCategory: e.roleCategory, level: j.level, techTags: e.techTags,
-          salaryMin: null, salaryMax: null, employmentType: j.employmentType, active: j.active,
+          roleCategory: e.roleCategory, level, techTags: e.techTags,
+          salaryMin: null, salaryMax: null, employmentType, active: j.active,
         },
         update: {
           title: j.title, location: j.location, url: j.url, postedAt: j.postedAt,
-          country: e.country, isRemote: e.isRemote, roleCategory: e.roleCategory, level: j.level,
-          techTags: e.techTags, employmentType: j.employmentType, active: j.active,
+          country: e.country, isRemote: e.isRemote, roleCategory: e.roleCategory, level,
+          techTags: e.techTags, employmentType, active: j.active,
         },
       });
       upserts++;

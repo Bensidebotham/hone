@@ -37,6 +37,26 @@ export const AGGREGATOR_SOURCES: AggregatorSource[] = [
   },
 ];
 
+/**
+ * Resolve the final level/employmentType for an aggregator job.
+ *
+ * The Simplify lists are curated by intent (a "New-Grad" list, a "Summer Internship" list) but
+ * are NOT reliably scoped — the new-grad list regularly contains "Senior"/"Staff"/"Principal"
+ * postings. So we trust the TITLE-derived classification (`enrichment`, from classifyRole /
+ * classifyEmploymentType) when it carries a real signal, and only fall back to the list's
+ * intended level when the title is unlabeled. This keeps genuinely-unlabeled new-grad roles in
+ * the feed while excluding clearly-senior ones.
+ */
+export function resolveAggregatorClassification(
+  enrichment: { level: string | null; employmentType: EmploymentType },
+  src: { level: "junior" | "intern"; employmentType: EmploymentType }
+): { level: string; employmentType: EmploymentType } {
+  return {
+    level: enrichment.level ?? src.level,
+    employmentType: enrichment.employmentType === "internship" ? "internship" : src.employmentType,
+  };
+}
+
 export async function fetchAggregator(
   src: AggregatorSource,
   opts: { fetchFn?: typeof fetch } = {}
