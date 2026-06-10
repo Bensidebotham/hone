@@ -153,7 +153,6 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
               </option>
             ))}
           </select>
-          <AddJobDialog />
         </div>)}
 
         {/* Table or empty state */}

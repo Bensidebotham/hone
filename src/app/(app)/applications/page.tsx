@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { ApplicationKanban } from "@/components/application-kanban";
+import { ApplicationsTable } from "@/components/applications-table";
+import { AddJobDialog } from "@/components/add-job-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -16,15 +17,18 @@ export default async function ApplicationsPage() {
   });
 
   return (
-    <div className="overflow-x-auto">
-      <div className="mb-6">
-        <p className="text-sm font-semibold text-primary">Tracker</p>
-        <h1 className="text-3xl font-extrabold tracking-tight">Applications</h1>
-        <p className="text-muted-foreground mt-1">
-          Track your job applications across every stage of the pipeline.
-        </p>
+    <div>
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-primary">Tracker</p>
+          <h1 className="text-3xl font-extrabold tracking-tight">Applications</h1>
+          <p className="text-muted-foreground mt-1">
+            Every role you're chasing — in one place that beats a spreadsheet.
+          </p>
+        </div>
+        <AddJobDialog />
       </div>
-      <ApplicationKanban applications={apps} />
+      <ApplicationsTable applications={apps} />
     </div>
   );
 }
