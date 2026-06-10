@@ -20,6 +20,16 @@ export async function updateStatus(applicationId: string, status: Status) {
   revalidatePath("/applications");
 }
 
+/** Set status to Applied and stamp the applied date to now (always overwrites). */
+export async function markAppliedToday(applicationId: string) {
+  const user = await requireUser();
+  await prisma.application.updateMany({
+    where: { id: applicationId, userId: user.id },
+    data: { status: "applied", appliedAt: new Date() },
+  });
+  revalidatePath("/applications");
+}
+
 export async function updateNotes(applicationId: string, notes: string) {
   const user = await requireUser();
   await prisma.application.updateMany({
