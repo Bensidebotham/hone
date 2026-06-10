@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { JobListItem } from "@/components/job-list-item";
 import { JobDetailPane, type JobDetailData } from "@/components/job-detail-pane";
-import { CompanyGroup, type BrowserGroup } from "@/components/company-group";
-import { loadMoreJobs, loadMoreCompanies, getJobDetail } from "@/lib/jobs/actions";
+import { loadMoreJobs, getJobDetail } from "@/lib/jobs/actions";
 import { toBrowserJob, type BrowserJob } from "@/components/job-browser-types";
 
 export { toBrowserJob, type BrowserJob };
@@ -22,13 +21,11 @@ function toDetail(j: BrowserJob): JobDetailData {
 }
 
 export function JobsBrowser({
-  savedView, initialJobs, initialCursor, initialGroups, hasMoreCompanies, savedIds, hasFilters,
+  savedView, initialJobs, initialCursor, savedIds, hasFilters,
 }: {
   savedView?: boolean;
   initialJobs?: BrowserJob[];
   initialCursor?: string | null;
-  initialGroups?: BrowserGroup[];
-  hasMoreCompanies?: boolean;
   savedIds: string[];
   hasFilters: boolean;
 }) {
@@ -38,16 +35,10 @@ export function JobsBrowser({
 
   const [jobs, setJobs] = useState<BrowserJob[]>(initialJobs ?? []);
   const [cursor, setCursor] = useState(initialCursor ?? null);
-
-  const [groups, setGroups] = useState<BrowserGroup[]>(initialGroups ?? []);
-  const [coPage, setCoPage] = useState(0);
-  const [moreCos, setMoreCos] = useState(!!hasMoreCompanies);
-
   const [loading, setLoading] = useState(false);
   const [rolesById, setRolesById] = useState<Map<string, BrowserJob>>(() => {
     const m = new Map<string, BrowserJob>();
     (initialJobs ?? []).forEach((j) => m.set(j.id, j));
-    (initialGroups ?? []).forEach((g) => g.topRoles.forEach((j) => m.set(j.id, j)));
     return m;
   });
 
@@ -67,7 +58,7 @@ export function JobsBrowser({
     return f;
   }, [sp]);
 
-  const firstId = savedView ? jobs[0]?.id : groups[0]?.topRoles[0]?.id;
+  const firstId = jobs[0]?.id;
   const explicitSelected = sp.get("selected");
   const selectedId = explicitSelected ?? firstId ?? null;
   const selectedJob = selectedId ? rolesById.get(selectedId) ?? null : null;
@@ -93,8 +84,8 @@ export function JobsBrowser({
     router.replace(qs ? `/jobs?${qs}` : "/jobs", { scroll: false });
   }
 
-  async function moreJobs() {
-    if (!cursor) return;
+  const moreJobs = useCallback(async () => {
+    if (!cursor || loading) return;
     setLoading(true);
     const res = await loadMoreJobs(flatParams, cursor);
     const mapped = res.jobs.map(toBrowserJob);
@@ -102,32 +93,28 @@ export function JobsBrowser({
     registerRoles(mapped);
     setCursor(res.nextCursor);
     setLoading(false);
-  }
-  async function moreCompanies() {
-    setLoading(true);
-    const next = coPage + 1;
-    const res = await loadMoreCompanies(flatParams, next);
-    const newGroups: BrowserGroup[] = res.groups.map((g) => ({
-      company: g.company,
-      totalCount: g.totalCount,
-      topRoles: g.topRoles.map(toBrowserJob),
-    }));
-    setGroups((p) => [...p, ...newGroups]);
-    registerRoles(newGroups.flatMap((g) => g.topRoles));
-    setCoPage(next);
-    setMoreCos(res.hasMore);
-    setLoading(false);
-  }
+  }, [cursor, loading, flatParams, registerRoles]);
 
-  const isEmpty = savedView ? jobs.length === 0 : groups.length === 0;
-  if (isEmpty) {
+  // Infinite scroll: load the next page when the sentinel scrolls into view.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !cursor) return;
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) moreJobs();
+    }, { rootMargin: "400px" });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [cursor, moreJobs]);
+
+  if (jobs.length === 0) {
     if (savedView) {
       return <EmptyState title="No saved jobs yet" message="Tap the ☆ on a job to bookmark it and find it here." />;
     }
     return (
       <EmptyState
-        title={hasFilters ? "No jobs match your filters" : "No entry-level roles right now"}
-        message={hasFilters ? `Try widening your filters, or switch the Level chip to "All levels."` : `Switch the Level chip to "All levels" to see more.`}
+        title={hasFilters ? "No jobs match your filters" : "No roles right now"}
+        message={hasFilters ? `Try widening your filters, or switch the audience chip to "All roles."` : `Switch the audience chip to "All roles" to see more.`}
       />
     );
   }
@@ -137,24 +124,13 @@ export function JobsBrowser({
   return (
     <div className="grid grid-cols-1 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] border border-border rounded-lg overflow-hidden h-[calc(100vh-220px)]">
       <div className={`${explicitSelected ? "hidden md:flex" : "flex"} flex-col overflow-y-auto border-r border-border min-h-0`}>
-        {savedView
-          ? jobs.map((job) => (
-              <JobListItem key={job.id} job={job} selected={job.id === selectedId} saved={saved.has(job.id)} onSelect={() => select(job.id)} />
-            ))
-          : groups.map((g) => (
-              <CompanyGroup key={g.company} group={g} params={flatParams} selectedId={selectedId} savedIds={saved} onSelect={select} onRolesLoaded={registerRoles} />
-            ))}
-        {savedView && cursor && (
-          <div className="p-3">
+        {jobs.map((job) => (
+          <JobListItem key={job.id} job={job} selected={job.id === selectedId} saved={saved.has(job.id)} onSelect={() => select(job.id)} />
+        ))}
+        {cursor && (
+          <div ref={sentinelRef} className="p-3">
             <Button variant="outline" size="sm" onClick={moreJobs} disabled={loading} className="w-full">
               {loading ? "Loading…" : "Load more"}
-            </Button>
-          </div>
-        )}
-        {!savedView && moreCos && (
-          <div className="p-3">
-            <Button variant="outline" size="sm" onClick={moreCompanies} disabled={loading} className="w-full">
-              {loading ? "Loading…" : "Load more companies"}
             </Button>
           </div>
         )}
