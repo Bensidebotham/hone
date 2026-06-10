@@ -1,21 +1,24 @@
 "use client";
 
 import { useState, useTransition, useEffect, useRef, useMemo } from "react";
-import { Search } from "lucide-react";
+import { Search, ChevronUp, ChevronDown } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/empty-state";
 import { ApplicationStatTiles } from "@/components/application-stat-tiles";
 import { StatusPill } from "@/components/status-pill";
 import { AddJobDialog } from "@/components/add-job-dialog";
 import { ApplicationDetailPanel } from "@/components/application-detail-panel";
-import { updateStatus } from "@/lib/applications/actions";
+import { updateStatus, markAppliedToday, deleteApplication } from "@/lib/applications/actions";
 import {
   filterApplications,
   sortApplications,
   summarize,
+  nextSort,
   type TableFilter,
   type TableSort,
+  type SortDir,
 } from "@/lib/applications/table";
+import { ApplicationContextMenu } from "@/components/application-context-menu";
 import type { KanbanStatus } from "@/lib/applications/kanban";
 import type { AppWithJob } from "@/app/(app)/applications/page";
 import { cn } from "@/lib/utils";
@@ -28,10 +31,15 @@ const FILTERS: { key: TableFilter; label: string }[] = [
 ];
 
 const SORTS: { key: TableSort; label: string }[] = [
-  { key: "lastActivity", label: "Last activity" },
-  { key: "applied", label: "Applied date" },
   { key: "company", label: "Company" },
+  { key: "status", label: "Status" },
+  { key: "applied", label: "Applied date" },
+  { key: "salary", label: "Salary" },
+  { key: "lastActivity", label: "Last activity" },
 ];
+
+const ROW_CLASS =
+  "cursor-pointer border-t border-border/60 text-sm transition hover:bg-muted/30 focus-visible:bg-muted/40 focus-visible:outline-none";
 
 function relative(date: Date): string {
   const days = Math.round((Date.now() - new Date(date).getTime()) / 86_400_000);
@@ -53,6 +61,7 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<TableFilter>("all");
   const [sort, setSort] = useState<TableSort>("lastActivity");
+  const [dir, setDir] = useState<SortDir>("desc");
   const [detail, setDetail] = useState<AppWithJob | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,10 +73,16 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
   }, [applications]);
 
   const rows = useMemo(
-    () => sortApplications(filterApplications(apps, { search, filter }), sort),
-    [apps, search, filter, sort]
+    () => sortApplications(filterApplications(apps, { search, filter }), sort, dir),
+    [apps, search, filter, sort, dir]
   );
   const summary = useMemo(() => summarize(apps), [apps]);
+
+  function applySort(key: TableSort) {
+    const n = nextSort(sort, dir, key);
+    setSort(n.key);
+    setDir(n.dir);
+  }
 
   function handleStatus(app: AppWithJob, next: KanbanStatus) {
     if (app.status === next) return;
@@ -94,6 +109,49 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
           )
         );
         setError("Failed to update status. Please try again.");
+      } finally {
+        pendingRef.current--;
+      }
+    });
+  }
+
+  function handleMarkApplied(app: AppWithJob) {
+    const prevStatus = app.status;
+    const prevAppliedAt = app.appliedAt;
+    const now = new Date();
+    setApps((prev) =>
+      prev.map((a) => (a.id === app.id ? { ...a, status: "applied", appliedAt: now } : a))
+    );
+    setError(null);
+    pendingRef.current++;
+    startTransition(async () => {
+      try {
+        await markAppliedToday(app.id);
+      } catch {
+        setApps((prev) =>
+          prev.map((a) =>
+            a.id === app.id ? { ...a, status: prevStatus, appliedAt: prevAppliedAt } : a
+          )
+        );
+        setError("Failed to update. Please try again.");
+      } finally {
+        pendingRef.current--;
+      }
+    });
+  }
+
+  function handleDelete(app: AppWithJob) {
+    setApps((prev) => prev.filter((a) => a.id !== app.id));
+    setError(null);
+    pendingRef.current++;
+    startTransition(async () => {
+      try {
+        await deleteApplication(app.id);
+      } catch {
+        // Re-insert just this row on failure; ordering is recomputed by the
+        // sort, so concurrent changes to other rows are preserved.
+        setApps((prev) => (prev.some((a) => a.id === app.id) ? prev : [...prev, app]));
+        setError("Failed to delete. Please try again.");
       } finally {
         pendingRef.current--;
       }
@@ -156,7 +214,7 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
           ))}
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value as TableSort)}
+            onChange={(e) => applySort(e.target.value as TableSort)}
             aria-label="Sort applications"
             className="h-9 rounded-lg border border-border bg-card px-2.5 text-xs font-semibold text-muted-foreground"
           >
@@ -180,26 +238,41 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-muted/40 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
-                  <th className="px-4 py-3">Company / Role</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Applied</th>
-                  <th className="px-4 py-3">Salary</th>
-                  <th className="px-4 py-3">Last activity</th>
+                  {([
+                    { key: "company", label: "Company / Role" },
+                    { key: "status", label: "Status" },
+                    { key: "applied", label: "Applied" },
+                    { key: "salary", label: "Salary" },
+                    { key: "lastActivity", label: "Last activity" },
+                  ] as { key: TableSort; label: string }[]).map((col) => (
+                    <th key={col.key} className="px-4 py-3" aria-sort={sort === col.key ? (dir === "asc" ? "ascending" : "descending") : "none"}>
+                      <button
+                        type="button"
+                        onClick={() => applySort(col.key)}
+                        className="inline-flex items-center gap-1 uppercase tracking-wide hover:text-foreground"
+                      >
+                        {col.label}
+                        {sort === col.key &&
+                          (dir === "asc" ? (
+                            <ChevronUp className="size-3" />
+                          ) : (
+                            <ChevronDown className="size-3" />
+                          ))}
+                      </button>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((app) => (
-                  <tr
+                  <ApplicationContextMenu
                     key={app.id}
-                    onClick={() => openDetail(app)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        openDetail(app);
-                      }
-                    }}
-                    tabIndex={0}
-                    className="cursor-pointer border-t border-border/60 text-sm transition hover:bg-muted/30 focus-visible:bg-muted/40 focus-visible:outline-none"
+                    app={app}
+                    rowClassName={ROW_CLASS}
+                    onOpenDetail={() => openDetail(app)}
+                    onChangeStatus={(next) => handleStatus(app, next)}
+                    onMarkAppliedToday={() => handleMarkApplied(app)}
+                    onDelete={() => handleDelete(app)}
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -219,7 +292,7 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
                     <td className="px-4 py-3 text-muted-foreground">{absolute(app.appliedAt)}</td>
                     <td className="px-4 py-3 font-medium">{app.job.salary ?? "—"}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{relative(app.updatedAt)}</td>
-                  </tr>
+                  </ApplicationContextMenu>
                 ))}
                 {rows.length === 0 && (
                   <tr>

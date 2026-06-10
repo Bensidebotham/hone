@@ -9,6 +9,7 @@ vi.mock("@/lib/applications/actions", () => ({
   createManualApplication: vi.fn(),
   updateApplicationDetails: vi.fn(),
   deleteApplication: vi.fn(),
+  markAppliedToday: vi.fn(),
 }));
 
 function makeApp(id: string, status: string, company: string): AppWithJob {
