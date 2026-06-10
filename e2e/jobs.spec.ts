@@ -29,10 +29,12 @@ import { test, expect } from "@playwright/test";
 //     await firstItem.click();
 //     await expect(page).toHaveURL(new RegExp(`selected=${jobId}`));
 //
-//     // Level chip defaults to Entry-level, with an All-levels option
-//     await expect(page.getByLabel("level")).toContainText("Entry-level");
-//     // Feed is grouped by company with an expand control
-//     await page.getByRole("button", { name: /Show \d+ more at/ }).first().click();
+//     // Audience chip defaults to "New grad", with Internships / All roles options
+//     await expect(page.getByLabel("level")).toContainText("New grad");
+//     // Feed is a flat, newest-first list of individual roles (no company grouping);
+//     // scrolling to the bottom auto-loads more via the infinite-scroll sentinel,
+//     // with a "Load more" button fallback.
+//     await page.getByRole("button", { name: "Load more" }).click();
 //   });
 // });
 
