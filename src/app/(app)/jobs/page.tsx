@@ -3,12 +3,10 @@ import { prisma } from "@/lib/db";
 import { buildJobWhere } from "@/lib/jobs/filters";
 import { listSavedJobIds } from "@/lib/jobs/saved-queries";
 import { JOBS_PAGE_SIZE, jobOrderBy, JOB_LIST_SELECT } from "@/lib/jobs/constants";
-import { getCompanyFeedPage } from "@/lib/jobs/grouped";
 import { JobSearchBar } from "@/components/job-search-bar";
 import { JobFilterChips } from "@/components/job-filter-chips";
 import { JobsBrowser } from "@/components/jobs-browser";
 import { toBrowserJob } from "@/components/job-browser-types";
-import { type BrowserGroup } from "@/components/company-group";
 import { JobScopeTabs } from "@/components/job-scope-tabs";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +20,7 @@ function JobsHeader({ savedCount, totalCount, isSavedView, filterKeys }: { saved
           Find your next role
           <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-highlight align-middle" aria-hidden="true" />
         </h1>
-        <p className="text-muted-foreground mt-1">Entry-level US software roles, grouped by company.</p>
+        <p className="text-muted-foreground mt-1">New-grad &amp; entry-level US software roles.</p>
       </div>
       <div className="mb-3"><JobScopeTabs savedCount={savedCount} /></div>
       <p className="text-sm text-muted-foreground mb-3">
@@ -65,13 +63,12 @@ export default async function JobsPage({
   }
 
   const where = buildJobWhere(params, user.id);
-  const [{ groups, hasMore }, totalCount] = await Promise.all([
-    getCompanyFeedPage(params, user.id, 0),
+  const [rows, totalCount] = await Promise.all([
+    prisma.job.findMany({ where, orderBy: jobOrderBy(params.sort), take: JOBS_PAGE_SIZE, select: JOB_LIST_SELECT }),
     prisma.job.count({ where }),
   ]);
-  const initialGroups: BrowserGroup[] = groups.map((g) => ({
-    company: g.company, totalCount: g.totalCount, topRoles: g.topRoles.map(toBrowserJob),
-  }));
+  const initialJobs = rows.map(toBrowserJob);
+  const initialCursor = rows.length === JOBS_PAGE_SIZE ? rows[rows.length - 1].id : null;
 
   return (
     <div className="max-w-6xl">
@@ -80,7 +77,7 @@ export default async function JobsPage({
         <JobSearchBar />
         <JobFilterChips />
       </div>
-      <JobsBrowser initialGroups={initialGroups} hasMoreCompanies={hasMore} savedIds={[...savedSet]} hasFilters={filterKeys.length > 0} />
+      <JobsBrowser initialJobs={initialJobs} initialCursor={initialCursor} savedIds={[...savedSet]} hasFilters={filterKeys.length > 0} />
     </div>
   );
 }
