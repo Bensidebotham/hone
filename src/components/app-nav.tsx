@@ -1,28 +1,60 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  FileText,
+  UserRound,
+  Briefcase,
+  ClipboardList,
+} from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/resume", label: "Resume" },
-  { href: "/profile", label: "Profile" },
-  { href: "/jobs", label: "Jobs" },
-  { href: "/applications", label: "Applications" },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/resume", label: "Resume", icon: FileText },
+  { href: "/profile", label: "Profile", icon: UserRound },
+  { href: "/jobs", label: "Jobs", icon: Briefcase },
+  { href: "/applications", label: "Applications", icon: ClipboardList },
 ] as const;
 
 export function AppNav() {
+  const pathname = usePathname();
+
   return (
-    <nav className="w-56 shrink-0 border-r bg-muted/40 flex flex-col gap-1 p-4 min-h-screen">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">
-        Navigation
-      </p>
-      {navItems.map(({ href, label }) => (
-        <Link
-          key={href}
-          href={href}
-          className="rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
-        >
-          {label}
-        </Link>
-      ))}
+    <nav className="w-60 shrink-0 border-r border-border bg-sidebar flex flex-col gap-1 p-4 min-h-screen">
+      <Link href="/dashboard" className="flex items-center gap-2.5 px-2 py-3 mb-4">
+        <span className="grid h-8 w-8 place-items-center rounded-xl bg-primary text-primary-foreground text-sm font-extrabold shadow-sm">
+          H
+        </span>
+        <span className="text-lg font-extrabold tracking-tight">Hone</span>
+        <span className="h-1.5 w-1.5 rounded-full bg-highlight" aria-hidden="true" />
+      </Link>
+
+      {navItems.map(({ href, label, icon: Icon }) => {
+        const active = pathname === href || pathname.startsWith(`${href}/`);
+        return (
+          <Link
+            key={href}
+            href={href}
+            aria-current={active ? "page" : undefined}
+            className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+              active
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            }`}
+          >
+            {active && (
+              <span
+                className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-highlight"
+                aria-hidden="true"
+              />
+            )}
+            <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={2} aria-hidden="true" />
+            {label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
