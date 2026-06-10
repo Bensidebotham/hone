@@ -7,7 +7,7 @@ export interface BoardConfig {
 }
 
 // Public board slugs. Grow this list freely.
-// All slugs validated 2026-06-09 — kept only those returning >0 jobs.
+// All slugs validated 2026-06-10 — kept only those returning >0 jobs.
 export const BOARDS: BoardConfig[] = [
   // ── Greenhouse ────────────────────────────────────────────────────────────
   { provider: "greenhouse", slug: "stripe", company: "Stripe" },
@@ -41,10 +41,82 @@ export const BOARDS: BoardConfig[] = [
   { provider: "greenhouse", slug: "gusto", company: "Gusto" },
   { provider: "greenhouse", slug: "flexport", company: "Flexport" },
   { provider: "greenhouse", slug: "airtable", company: "Airtable" },
+  // — fintech / payments —
+  { provider: "greenhouse", slug: "carta", company: "Carta" },
+  { provider: "greenhouse", slug: "mercury", company: "Mercury" },
+  { provider: "greenhouse", slug: "nubank", company: "Nubank" },
+  { provider: "greenhouse", slug: "betterment", company: "Betterment" },
+  { provider: "greenhouse", slug: "ripple", company: "Ripple" },
+  { provider: "greenhouse", slug: "gemini", company: "Gemini" },
+  { provider: "greenhouse", slug: "bitgo", company: "BitGo" },
+  { provider: "greenhouse", slug: "adyen", company: "Adyen" },
+  { provider: "greenhouse", slug: "payoneer", company: "Payoneer" },
+  { provider: "greenhouse", slug: "n26", company: "N26" },
+  { provider: "greenhouse", slug: "monzo", company: "Monzo" },
+  // — cloud / infrastructure / security —
+  { provider: "greenhouse", slug: "rubrik", company: "Rubrik" },
+  { provider: "greenhouse", slug: "purestorage", company: "Pure Storage" },
+  { provider: "greenhouse", slug: "zscaler", company: "Zscaler" },
+  { provider: "greenhouse", slug: "coreweave", company: "CoreWeave" },
+  { provider: "greenhouse", slug: "tenableinc", company: "Tenable" },
+  { provider: "greenhouse", slug: "commvault", company: "Commvault" },
+  { provider: "greenhouse", slug: "tanium", company: "Tanium" },
+  { provider: "greenhouse", slug: "abnormalsecurity", company: "Abnormal Security" },
+  { provider: "greenhouse", slug: "verkada", company: "Verkada" },
+  { provider: "greenhouse", slug: "cockroachlabs", company: "CockroachDB" },
+  // — SaaS / developer tools / analytics —
+  { provider: "greenhouse", slug: "vercel", company: "Vercel" },
+  { provider: "greenhouse", slug: "amplitude", company: "Amplitude" },
+  { provider: "greenhouse", slug: "postman", company: "Postman" },
+  { provider: "greenhouse", slug: "launchdarkly", company: "LaunchDarkly" },
+  { provider: "greenhouse", slug: "pagerduty", company: "PagerDuty" },
+  { provider: "greenhouse", slug: "newrelic", company: "New Relic" },
+  { provider: "greenhouse", slug: "algolia", company: "Algolia" },
+  { provider: "greenhouse", slug: "dataiku", company: "Dataiku" },
+  { provider: "greenhouse", slug: "mixpanel", company: "Mixpanel" },
+  { provider: "greenhouse", slug: "klaviyo", company: "Klaviyo" },
+  { provider: "greenhouse", slug: "braze", company: "Braze" },
+  { provider: "greenhouse", slug: "iterable", company: "Iterable" },
+  { provider: "greenhouse", slug: "yotpo", company: "Yotpo" },
+  { provider: "greenhouse", slug: "intercom", company: "Intercom" },
+  { provider: "greenhouse", slug: "sisense", company: "Sisense" },
+  // — vertical SaaS / commerce —
+  { provider: "greenhouse", slug: "toast", company: "Toast" },
+  { provider: "greenhouse", slug: "webflow", company: "Webflow" },
+  { provider: "greenhouse", slug: "calendly", company: "Calendly" },
+  { provider: "greenhouse", slug: "squarespace", company: "Squarespace" },
+  { provider: "greenhouse", slug: "opentable", company: "OpenTable" },
+  { provider: "greenhouse", slug: "faire", company: "Faire" },
+  { provider: "greenhouse", slug: "carvana", company: "Carvana" },
+  { provider: "greenhouse", slug: "wolt", company: "Wolt" },
+  { provider: "greenhouse", slug: "project44", company: "project44" },
+  // — autonomous / robotics / space —
+  { provider: "greenhouse", slug: "waymo", company: "Waymo" },
+  { provider: "greenhouse", slug: "nuro", company: "Nuro" },
+  { provider: "greenhouse", slug: "motional", company: "Motional" },
+  { provider: "greenhouse", slug: "andurilindustries", company: "Anduril Industries" },
+  { provider: "greenhouse", slug: "spacex", company: "SpaceX" },
+  { provider: "greenhouse", slug: "planetlabs", company: "Planet Labs" },
+  // — gaming / entertainment —
+  { provider: "greenhouse", slug: "riotgames", company: "Riot Games" },
+  { provider: "greenhouse", slug: "epicgames", company: "Epic Games" },
+  { provider: "greenhouse", slug: "rockstargames", company: "Rockstar Games" },
+  { provider: "greenhouse", slug: "scopely", company: "Scopely" },
+  { provider: "greenhouse", slug: "roblox", company: "Roblox" },
+  // — consumer / marketplace —
+  { provider: "greenhouse", slug: "duolingo", company: "Duolingo" },
+  { provider: "greenhouse", slug: "oura", company: "Oura" },
+  { provider: "greenhouse", slug: "peloton", company: "Peloton" },
+  { provider: "greenhouse", slug: "block", company: "Block (Cash App / Square)" },
+  { provider: "greenhouse", slug: "nextdoor", company: "Nextdoor" },
+  { provider: "greenhouse", slug: "justworks", company: "Justworks" },
+  { provider: "greenhouse", slug: "homelight", company: "HomeLight" },
 
   // ── Lever ─────────────────────────────────────────────────────────────────
   { provider: "lever", slug: "outreach", company: "Outreach" },
   { provider: "lever", slug: "palantir", company: "Palantir" },
+  { provider: "lever", slug: "highspot", company: "Highspot" },
+  { provider: "lever", slug: "wealthfront", company: "Wealthfront" },
 
   // ── Ashby ─────────────────────────────────────────────────────────────────
   { provider: "ashby", slug: "openai", company: "OpenAI" },
@@ -57,4 +129,31 @@ export const BOARDS: BoardConfig[] = [
   { provider: "ashby", slug: "modal", company: "Modal" },
   { provider: "ashby", slug: "deel", company: "Deel" },
   { provider: "ashby", slug: "posthog", company: "PostHog" },
+  // — data / cloud —
+  { provider: "ashby", slug: "snowflake", company: "Snowflake" },
+  { provider: "ashby", slug: "confluent", company: "Confluent" },
+  { provider: "ashby", slug: "benchling", company: "Benchling" },
+  { provider: "ashby", slug: "notion", company: "Notion" },
+  { provider: "ashby", slug: "zapier", company: "Zapier" },
+  { provider: "ashby", slug: "plaid", company: "Plaid" },
+  { provider: "ashby", slug: "supabase", company: "Supabase" },
+  { provider: "ashby", slug: "temporal", company: "Temporal" },
+  { provider: "ashby", slug: "neon", company: "Neon" },
+  { provider: "ashby", slug: "render", company: "Render" },
+  { provider: "ashby", slug: "railway", company: "Railway" },
+  { provider: "ashby", slug: "airbyte", company: "Airbyte" },
+  // — AI / ML —
+  { provider: "ashby", slug: "cursor", company: "Cursor" },
+  { provider: "ashby", slug: "perplexity", company: "Perplexity AI" },
+  { provider: "ashby", slug: "character", company: "Character.AI" },
+  { provider: "ashby", slug: "elevenlabs", company: "ElevenLabs" },
+  { provider: "ashby", slug: "runway-ml", company: "Runway" },
+  { provider: "ashby", slug: "fireworks-ai", company: "Fireworks AI" },
+  { provider: "ashby", slug: "anyscale", company: "Anyscale" },
+  { provider: "ashby", slug: "semgrep", company: "Semgrep" },
+  // — security / identity / legal —
+  { provider: "ashby", slug: "vanta", company: "Vanta" },
+  { provider: "ashby", slug: "harvey", company: "Harvey" },
+  { provider: "ashby", slug: "kira", company: "Kira" },
+  { provider: "ashby", slug: "workos", company: "WorkOS" },
 ];
