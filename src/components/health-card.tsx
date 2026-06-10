@@ -23,10 +23,10 @@ function ScoreItem({
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted-foreground">{label}</span>
       {score !== null ? (
-        <span className="font-medium">{score} / 100</span>
+        <span className="font-semibold tabular-nums">{score}<span className="text-muted-foreground font-normal"> / 100</span></span>
       ) : (
-        <Link href={href} className="text-primary underline underline-offset-2">
-          Not analyzed
+        <Link href={href} className="text-primary font-medium underline underline-offset-2 decoration-primary/40">
+          Analyze →
         </Link>
       )}
     </div>
@@ -35,16 +35,29 @@ function ScoreItem({
 
 export function HealthCard({ composite, components }: HealthCardProps) {
   return (
-    <Card className="hover:shadow-sm transition-shadow">
-      <CardHeader>
-        <CardTitle>Profile Health</CardTitle>
+    <Card className="overflow-hidden transition-shadow hover:shadow-md">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base font-semibold">
+          Profile Health
+          <span className="h-1.5 w-1.5 rounded-full bg-highlight" aria-hidden="true" />
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-baseline gap-1">
-          <span className="text-5xl font-bold">{composite}</span>
-          <span className="text-muted-foreground">/ 100</span>
+      <CardContent className="space-y-5">
+        <div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-6xl font-extrabold tracking-tight text-primary tabular-nums">
+              {composite}
+            </span>
+            <span className="text-muted-foreground font-medium">/ 100</span>
+          </div>
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-[width] duration-500"
+              style={{ width: `${Math.max(0, Math.min(100, composite))}%` }}
+            />
+          </div>
         </div>
-        <div className="space-y-2 pt-2 border-t">
+        <div className="space-y-2.5 pt-1 border-t border-border">
           <ScoreItem label="Resume" score={components.resume} href="/resume" />
           <ScoreItem
             label="LinkedIn"

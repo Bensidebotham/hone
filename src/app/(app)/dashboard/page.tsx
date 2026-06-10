@@ -18,10 +18,16 @@ export default async function Dashboard() {
   });
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">
-        Welcome, {user.name ?? "there"}
-      </h1>
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      <div>
+        <p className="text-sm font-semibold text-primary">Dashboard</p>
+        <h1 className="text-3xl font-extrabold tracking-tight">
+          Welcome back, {user.name ?? "there"}
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Your job search at a glance.
+        </p>
+      </div>
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {/* Health column: score + trend stacked */}
         <div className="space-y-6">
           <HealthCard
