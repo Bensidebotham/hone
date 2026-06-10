@@ -3,10 +3,17 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-export function MatchButton({ jobId }: { jobId: string }) {
+export function MatchButton({ jobId, hasDescription }: { jobId: string; hasDescription: boolean }) {
   const [r, setR] = useState<{ score: number; matched: string[]; missing: string[] } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  if (!hasDescription) {
+    return (
+      <p className="mt-2 text-sm text-muted-foreground">
+        Resume matching isn't available for this listing — open the original posting to read the full description.
+      </p>
+    );
+  }
   async function run() {
     setLoading(true); setError(null);
     const res = await fetch("/api/match", { method: "POST",

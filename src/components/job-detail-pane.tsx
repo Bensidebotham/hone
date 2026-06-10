@@ -52,7 +52,7 @@ export function JobDetailPane({ job }: { job: JobDetailData | null }) {
           </a>
         )}
       </div>
-      <MatchButton jobId={job.id} />
+      <MatchButton jobId={job.id} hasDescription={Boolean(job.descriptionHtml || job.descriptionText?.trim())} />
 
       <hr className="my-4 border-border" />
 

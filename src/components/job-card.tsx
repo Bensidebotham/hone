@@ -15,6 +15,7 @@ export type JobCardData = {
   url: string | null;
   source: "ats" | "paste";
   salary: string | null;
+  hasDescription: boolean;
 };
 
 export function JobCard({ job, saved }: { job: JobCardData; saved: boolean }) {
@@ -77,7 +78,7 @@ export function JobCard({ job, saved }: { job: JobCardData; saved: boolean }) {
           </a>
         )}
         <div className="flex items-center gap-2 mt-2">
-          <MatchButton jobId={job.id} />
+          <MatchButton jobId={job.id} hasDescription={job.hasDescription} />
           <SaveJobButton jobId={job.id} />
         </div>
       </CardContent>
