@@ -94,6 +94,14 @@ export function extractTechTags(title: string, description: string): string[] {
   return found;
 }
 
+export type EmploymentType = "fulltime" | "internship";
+
+export function classifyEmploymentType(title: string | null | undefined): EmploymentType {
+  const t = (title ?? "").toLowerCase();
+  if (/\bintern(ship)?\b/.test(t) || /\bco[-\s]?op\b/.test(t)) return "internship";
+  return "fulltime";
+}
+
 export interface EnrichInput {
   title: string;
   location: string | null;
@@ -109,6 +117,7 @@ export interface JobEnrichment {
   techTags: string[];
   salaryMin: number | null;
   salaryMax: number | null;
+  employmentType: EmploymentType;
 }
 
 export function enrichJob(input: EnrichInput): JobEnrichment {
@@ -119,5 +128,5 @@ export function enrichJob(input: EnrichInput): JobEnrichment {
   const { salaryMin, salaryMax } = parseSalaryRange(
     input.salary ?? input.descriptionText
   );
-  return { country, isRemote, roleCategory, level, techTags, salaryMin, salaryMax };
+  return { country, isRemote, roleCategory, level, techTags, salaryMin, salaryMax, employmentType: classifyEmploymentType(input.title) };
 }

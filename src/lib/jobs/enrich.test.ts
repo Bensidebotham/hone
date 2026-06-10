@@ -72,7 +72,33 @@ describe("extractTechTags", () => {
   });
 });
 
-import { enrichJob } from "./enrich";
+import { classifyEmploymentType, enrichJob } from "./enrich";
+
+describe("classifyEmploymentType", () => {
+  it("detects internships", () => {
+    expect(classifyEmploymentType("Software Engineer Intern")).toBe("internship");
+    expect(classifyEmploymentType("Summer 2027 Internship, Backend")).toBe("internship");
+    expect(classifyEmploymentType("Engineering Co-Op")).toBe("internship");
+    expect(classifyEmploymentType("Engineering Co op")).toBe("internship");
+  });
+
+  it("defaults everything else to fulltime", () => {
+    expect(classifyEmploymentType("Software Engineer, New Grad")).toBe("fulltime");
+    expect(classifyEmploymentType("Senior Backend Engineer")).toBe("fulltime");
+    expect(classifyEmploymentType("")).toBe("fulltime");
+    expect(classifyEmploymentType(null)).toBe("fulltime");
+  });
+
+  it("does not false-positive on substrings", () => {
+    expect(classifyEmploymentType("Internal Tools Engineer")).toBe("fulltime");
+    expect(classifyEmploymentType("Cooperative Systems Engineer")).toBe("fulltime");
+  });
+
+  it("enrichJob includes employmentType", () => {
+    const e = enrichJob({ title: "Backend Engineer Intern", location: "Remote", descriptionText: "", salary: null });
+    expect(e.employmentType).toBe("internship");
+  });
+});
 
 describe("enrichJob", () => {
   it("produces the full enrichment object", () => {
@@ -90,6 +116,7 @@ describe("enrichJob", () => {
       techTags: expect.arrayContaining(["React", "TypeScript"]),
       salaryMin: 150000,
       salaryMax: 190000,
+      employmentType: "fulltime",
     });
   });
 
