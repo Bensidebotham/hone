@@ -109,6 +109,7 @@ model Analysis {
 enum JobSource {
   ats
   paste
+  aggregator
 }
 
 model Job {
@@ -133,6 +134,9 @@ model Job {
   techTags        String[]
   salaryMin       Int?
   salaryMax       Int?
+  // Sourcing metadata
+  employmentType  String?       // "fulltime" | "internship"
+  active          Boolean       @default(true)
   user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   matches         Match[]
   applications    Application[]
@@ -145,6 +149,8 @@ model Job {
   @@index([level])
   @@index([salaryMin])
   @@index([techTags], type: Gin)
+  @@index([employmentType])
+  @@index([active])
 }
 
 model Match {
