@@ -34,7 +34,7 @@ The Applications power table (shipped 2026-06-09) covers the basics but three in
 | Context menu actions | Change status, Mark applied today, Open job posting, View / edit details, Delete |
 | Status sort order | Pipeline rank: saved → applied → interviewing → offer → rejected |
 | Salary sort basis | `Job.salaryMin` (enrichment); nulls last |
-| Drawer primitive | base-ui `drawer` (a new `ui/drawer.tsx` wrapper) |
+| Drawer primitive | base-ui `dialog` styled as a right-side sheet (a new `ui/drawer.tsx` wrapper). The dedicated base-ui `drawer` is swipe/snap-point oriented for mobile bottom-sheets — heavier than a desktop right slide-over needs. |
 | Context-menu primitive | base-ui `context-menu` (a new `ui/context-menu.tsx` wrapper) |
 
 ## Data model
@@ -75,7 +75,7 @@ Add `markAppliedToday(applicationId)`: sets `status: "applied"` and `appliedAt: 
 
 ### Detail drawer — `src/components/application-detail-panel.tsx`
 
-Reworked from `Dialog` to a right-side drawer (via new `ui/drawer.tsx`). Read-first layout:
+Reworked from a centered `Dialog` to a right-side slide-over (via new `ui/drawer.tsx`, itself built on the base-ui `dialog` primitive). Read-first layout:
 
 - **Header:** `CompanyLogo`, role title, company, live `StatusPill`, then a meta line: `salary · location · View original ↗` (link shown only when `url` present).
 - **Summary section:** mirrors `JobDetailPane`'s render logic — if `descriptionHtml`, render it in a `prose` block (already sanitized at ingest); else if `descriptionText` trim, render preformatted text; else an italic *"No description — this role was added manually."* note.
@@ -96,10 +96,10 @@ Wraps its children (a table row) in base-ui `context-menu`. Props: `app`, plus c
 
 ### UI primitives (new thin wrappers, matching `ui/menu.tsx` style)
 
-- `src/components/ui/drawer.tsx` — `Drawer`, `DrawerContent` (right-side `Positioner`/`Popup` with slide-in/out animation + backdrop), `DrawerClose`, `DrawerTitle`. Built on `@base-ui/react/drawer`.
+- `src/components/ui/drawer.tsx` — `Drawer`, `DrawerContent` (right-edge `Popup` with `slide-in-from-right` / `slide-out-to-right` animation + backdrop), `DrawerClose`, `DrawerTitle`. Built on `@base-ui/react/dialog` (same primitive as `ui/dialog.tsx`).
 - `src/components/ui/context-menu.tsx` — `ContextMenu`, `ContextMenuTrigger`, `ContextMenuContent`, `ContextMenuItem`, `ContextMenuSeparator`, `ContextMenuSubmenu*` as needed. Built on `@base-ui/react/context-menu`. Styling reuses the `ui/menu.tsx` popup/item classes.
 
-> Before implementing the two new primitives, read the base-ui `drawer` and `context-menu` type definitions / docs (per `AGENTS.md`: this stack diverges from training data). Do not assume the API.
+> Before implementing the `context-menu` wrapper, read the base-ui `context-menu` type definitions / docs (per `AGENTS.md`: this stack diverges from training data). Note `ContextMenu.Trigger` renders a `<div>`; mount it on the `<tr>` via the base-ui `render` prop. The drawer reuses the already-understood `dialog` primitive.
 
 ## Interactions preserved
 
