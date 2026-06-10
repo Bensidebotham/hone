@@ -73,21 +73,30 @@ poll-jobs cron ─┤                                                           
 
 ### 2. Relevance rebuild (`src/lib/jobs/enrich.ts`, `enrich.data.ts`)
 
-**Level classifier** — strengthen entry-level detection so the `level=null` bucket shrinks
-dramatically. New-grad signals to recognize (case-insensitive, title-based):
-`new grad`, `new graduate`, `university grad`, `early career`, `early-career`, `entry level`,
-`entry-level`, `associate`, `graduate`, `campus`, `2026 grad`, `2027 grad`, plus the existing
-numeric `Engineer/Developer/SWE I/II` rule. These map to the `junior` level bucket.
+**Correction after inspecting the data (2026-06-10):** the original funnel diagnosis blamed the
+classifier, but sampling shows it is mostly working correctly:
+- `roleCategory = "other"` is genuinely non-engineering ("Account Executive, AI Sales",
+  "Accounts Receivable Analyst", "Administrative Coordinator") — correctly excluded.
+- `level = null` CS roles are genuinely mid-level ICs ("Backend Engineer, Payments and Risk",
+  "Data Scientist") — correctly excluded from a *new-grad* feed.
+- `LEVEL_RULES` already recognize new-grad keywords, and the `fullstack` rule already catches
+  `engineer`/`developer`/`programmer`, so the previously-proposed generic `swe` fallback is
+  **dead weight — dropped.**
+- Across all 5,933 jobs only ~91 titles contain "intern" and ~9 contain new-grad signals. **These
+  40 elite companies barely post new-grad roles**, so fixing filters recovers almost no new-grad
+  volume. **The aggregator lists are the actual new-grad supply and the primary deliverable**, not
+  a supplement.
 
-**Internship classifier** — `employmentType` derivation: title/keywords containing `intern`,
-`internship`, `co-op`, `co op`, `summer 20xx` → `internship`; otherwise `fulltime`. Aggregator
-metadata (which list a role came from) is authoritative when present.
+Classifier work is therefore small and targeted:
 
-**Role classifier** — add a generic `swe` category as a fallback: a title containing
-`engineer` / `developer` / `software` that matches no specific category (frontend/backend/etc.)
-classifies as `swe` instead of `other`. `swe` joins `CS_ROLE_CATEGORIES` so generic
-"Software Engineer" titles stop being silently dropped. Genuine non-engineering titles (sales,
-marketing, recruiting) still resolve to `other` and remain excluded.
+**`employmentType` classifier** — derive `"fulltime" | "internship"`: a title containing `intern`,
+`internship`, `co-op`, or `co op` → `internship`; otherwise `fulltime`. For aggregator jobs the
+**source list is authoritative** (new-grad list → `fulltime`; internship list → `internship`),
+overriding the title heuristic.
+
+**Aggregator level/role** — new-grad-list jobs are tagged `level = "junior"` and internship-list
+jobs `level = "intern"` authoritatively. `roleCategory` is still derived from the title via the
+existing classifier (the lists are already tech-only).
 
 ### 3. Sourcing
 
@@ -101,20 +110,49 @@ warning when a board returns zero rows or a non-200, so a broken slug is visible
 big-name and competitive-comp employers across Greenhouse/Lever/Ashby.
 
 **Aggregator fetcher** (`src/lib/jobs/aggregator.ts`, new) — fetch the machine-readable
-`listings.json` from the Simplify new-grad and Summer-internship repos, normalize each entry
-(company, title, locations, url, date_posted, active, intern-vs-newgrad) into `NormalizedJob`
-+ `employmentType` + `active`, and upsert with `source = "aggregator"`. Runs inside the existing
-`poll-jobs` cron.
+`listings.json` from the Simplify repos, normalize each entry into `NormalizedJob` +
+`employmentType` + `active`, and upsert with `source = "aggregator"`. Runs inside the existing
+`poll-jobs` cron. Sources are configurable so `Summer2027-Internships` can be added when it
+launches (currently 404).
+
+Confirmed source schema (verified 2026-06-10) — array of objects with these fields:
+```
+id            string (uuid)      → externalId  "simplify:newgrad:<id>" / "simplify:intern:<id>"
+company_name  string             → company
+title         string             → title
+locations     string[]           → location   (join with " · "; first is primary)
+url           string             → url
+date_posted   number (unix secs) → postedAt    new Date(date_posted * 1000)
+date_updated  number (unix secs)
+active        boolean            → active
+is_visible    boolean            → ingest only when is_visible === true
+category      string             → tech category label (lists are tech-only)
+sponsorship   string             → ignored (out of scope)
+degrees       string[]           → ignored
+terms         string[]           → internship list only (e.g. "Summer 2027"); ignored for now
+```
+Configured sources (each: raw URL, `employmentType`, `level`):
+- `SimplifyJobs/New-Grad-Positions` → `fulltime` / `junior` (the must-have)
+- `SimplifyJobs/Summer2026-Internships` → `internship` / `intern`
+- (`Summer2027-Internships` added later — the user's target term; fetcher tolerates 404)
+
+**Data limitation (recorded):** aggregator listings carry **no description and no salary**.
+Aggregator jobs therefore have `descriptionText = ""`, `descriptionHtml = ""`, `salary = null`,
+`salaryMin/Max = null`. Consequences: the detail pane shows "No description — view original
+posting ↗", salary simply doesn't render (LinkedIn-like), and resume-matching is disabled for
+these jobs. ATS-roster jobs still carry full descriptions + salary, so the feed is a mix.
 
 **Dedup** (`src/lib/jobs/dedup.ts` or within upsert) — the same role can appear via both an ATS
-board and an aggregator list. Dedup on normalized URL (strip query/trailing slash). When a
-collision exists, prefer the direct ATS record; mark/skip the aggregator duplicate.
+board and an aggregator list. Dedup on normalized URL (lowercased host+path, strip query/hash and
+trailing slash). When a collision exists, prefer the direct ATS record (it has description +
+salary); skip the aggregator duplicate. Most aggregator companies are outside our roster, so most
+aggregator jobs are kept as lightweight rows.
 
 ### 4. Filters (`src/lib/jobs/filters.ts`)
 
 - **Default** (no params): `source ∈ {ats, aggregator}`, `active = true`,
-  `roleCategory ∈ CS_ROLE_CATEGORIES` (now incl. `swe`), US-or-ambiguous-remote, and
-  **entry-level full-time** — i.e. `level = junior` AND `employmentType = fulltime`.
+  `roleCategory ∈ CS_ROLE_CATEGORIES`, US-or-ambiguous-remote, and **entry-level full-time** —
+  i.e. `level = junior` AND `employmentType = fulltime`.
 - **Employment-type chip**: Full-time (default) | Internship | Both.
 - Existing chips retained: role, tech, salary min, remote, location, posted-within, search.
 - `level = "all"` still bypasses the level filter.
@@ -134,12 +172,11 @@ collision exists, prefer the direct ATS record; mark/skip the aggregator duplica
 ### 6. Testing (TDD)
 
 Unit tests first, then implementation, for:
-- Level classifier (new-grad signals → `junior`; senior/manager unaffected).
-- Employment-type classifier (intern/co-op/summer → `internship`).
-- Role classifier (`swe` fallback; non-eng → `other`).
-- Aggregator parser (listings.json → NormalizedJob, active handling).
-- Dedup (URL normalization, ATS-preferred collisions).
-- `buildJobWhere` defaults (entry-level FT) and employment-type chip.
+- Employment-type classifier (intern/co-op → `internship`; else `fulltime`).
+- Aggregator parser (listings.json → NormalizedJob, `is_visible`/`active` handling,
+  authoritative level/employmentType per source).
+- URL normalization + dedup (ATS-preferred collisions).
+- `buildJobWhere` defaults (entry-level FT) and the employment-type chip.
 
 ## Implementation phasing
 
@@ -153,9 +190,8 @@ Built in this order so the UI lands on good, plentiful data.
 
 ## Success criteria
 
-- Default feed returns hundreds+ of relevant new-grad full-time roles (vs 33 today).
-- `level = null` and `roleCategory = other` no longer silently drop large swaths of real
-  engineering jobs.
+- Default feed returns hundreds+ of relevant new-grad full-time roles (vs 33 today), the bulk
+  sourced from the aggregator lists.
 - No company silently contributes zero jobs without a logged warning.
 - Internships reachable in one filter click; not shown by default.
 - Feed is a flat, scrollable, newest-first list; no company-grouped default remains.
