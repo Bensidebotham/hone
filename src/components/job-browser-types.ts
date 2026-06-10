@@ -14,5 +14,7 @@ export function toBrowserJob(row: JobListRow): BrowserJob {
     postedAt: row.postedAt ? new Date(row.postedAt).toISOString() : null,
     techTags: row.techTags, descriptionText: row.descriptionText,
     descriptionHtml: row.descriptionHtml,
+    // No on-site description ⇒ aggregator-sourced listing that links out to apply.
+    external: !row.descriptionText?.trim() && !row.descriptionHtml,
   };
 }

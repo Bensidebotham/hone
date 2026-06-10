@@ -12,6 +12,7 @@ export interface JobListItemData {
   salary: string | null;
   postedAt: string | null; // ISO string (serialized for the client)
   techTags: string[];
+  external: boolean; // aggregator-sourced listing (no on-site description; apply via original posting)
 }
 
 function postedAgo(iso: string | null): string {
@@ -59,6 +60,11 @@ export function JobListItem({
         <div className="text-sm text-muted-foreground truncate">
           {job.company}
           {job.location ? ` · ${job.location}` : ""}
+          {job.external && (
+            <span className="ml-1.5 align-middle text-[0.6rem] uppercase tracking-wide rounded border border-border px-1 py-0.5 text-muted-foreground">
+              External ↗
+            </span>
+          )}
         </div>
         <div className="text-sm">
           {job.salary && <span className="text-green-600">{job.salary}</span>}
