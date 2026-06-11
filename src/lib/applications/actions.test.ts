@@ -211,6 +211,66 @@ describe("updateApplicationDetails", () => {
   });
 });
 
+describe("updateStatus — event emission", () => {
+  it("emits a status_change event when status changes", async () => {
+    // appFindFirst default returns { status: "saved" } (set in beforeEach)
+    await updateStatus("a1", "interviewing");
+    expect(appEventCreate).toHaveBeenCalledOnce();
+    expect(appEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: "status_change",
+          fromStatus: "saved",
+          toStatus: "interviewing",
+          applicationId: "a1",
+          userId: "u1",
+        }),
+      })
+    );
+  });
+
+  it("does NOT emit an event when status is unchanged", async () => {
+    appFindFirst.mockResolvedValue({ status: "interviewing" });
+    await updateStatus("a1", "interviewing");
+    expect(appEventCreate).not.toHaveBeenCalled();
+    expect(appUpdateMany).toHaveBeenCalledOnce();
+  });
+});
+
+describe("addApplication — event emission", () => {
+  it("emits a created event with toStatus 'saved'", async () => {
+    await addApplication("job1");
+    expect(appEventCreate).toHaveBeenCalledOnce();
+    expect(appEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: "created",
+          toStatus: "saved",
+          applicationId: "app1",
+          userId: "u1",
+        }),
+      })
+    );
+  });
+});
+
+describe("createManualApplication — event emission", () => {
+  it("emits a created event with the input status as toStatus", async () => {
+    await createManualApplication({ company: "Acme", title: "Eng", status: "applied" });
+    expect(appEventCreate).toHaveBeenCalledOnce();
+    expect(appEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: "created",
+          toStatus: "applied",
+          applicationId: "app1",
+          userId: "u1",
+        }),
+      })
+    );
+  });
+});
+
 describe("deleteApplication", () => {
   it("deletes the application and an orphaned paste job", async () => {
     appFindFirst.mockResolvedValue({ id: "app1", jobId: "job1", job: { id: "job1", source: "paste" } });
