@@ -13,6 +13,7 @@ export function ShowMoreButton({ expanded, remaining, onToggle }: ShowMoreButton
   return (
     <button
       type="button"
+      aria-expanded={expanded}
       onClick={onToggle}
       className="mt-2 flex w-full items-center justify-center gap-1 rounded-md py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
     >
