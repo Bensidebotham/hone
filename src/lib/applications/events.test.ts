@@ -55,4 +55,17 @@ describe("recordApplicationEvent", () => {
     const [args] = create.mock.calls;
     expect(args[0].data.summary).toBe("Custom");
   });
+
+  it("creates an email_detected event with a default 'from email' summary", async () => {
+    await recordApplicationEvent({
+      applicationId: "a1",
+      userId: "u1",
+      type: "email_detected",
+      fromStatus: "applied",
+      toStatus: "rejected",
+    });
+    const args = create.mock.calls.at(-1)![0];
+    expect(args.data.type).toBe("email_detected");
+    expect(args.data.summary).toBe("Rejected (detected from email)");
+  });
 });

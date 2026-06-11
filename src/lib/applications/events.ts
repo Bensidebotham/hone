@@ -25,6 +25,9 @@ function defaultSummary(input: RecordEventInput): string | undefined {
   if (input.type === "status_change" && input.toStatus) {
     return `Moved to ${STATUS_LABEL[input.toStatus]}`;
   }
+  if (input.type === "email_detected" && input.toStatus) {
+    return `${STATUS_LABEL[input.toStatus]} (detected from email)`;
+  }
   return undefined;
 }
 
