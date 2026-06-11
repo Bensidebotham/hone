@@ -36,7 +36,7 @@ export function FeatureGrid() {
       </Reveal>
       <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {FEATURES.map((f, i) => (
-          <Reveal key={f.title} delay={i * 0.05}>
+          <Reveal key={f.title} delay={i * 0.05} className="h-full">
             <Card className="h-full hover:shadow-sm transition-shadow">
               <div className="flex flex-col gap-3 px-(--card-spacing)">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
