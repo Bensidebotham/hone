@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const findMany = vi.fn();
 vi.mock("@/lib/db", () => ({
@@ -8,6 +8,10 @@ vi.mock("@/lib/db", () => ({
 import { getApplicationTrend, WEEKS } from "@/lib/dashboard/application-trend";
 
 describe("getApplicationTrend", () => {
+  beforeEach(() => {
+    findMany.mockReset();
+  });
+
   it("queries applications with appliedAt set, scoped to userId, gte ~10 weeks ago", async () => {
     findMany.mockResolvedValueOnce([]);
     const before = Date.now();

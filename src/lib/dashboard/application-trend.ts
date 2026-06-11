@@ -30,7 +30,8 @@ export async function getApplicationTrend(
     start.setDate(start.getDate() - (WEEKS - 1 - i) * 7);
     buckets.push({ start, key: ymd(start), count: 0 });
   }
-  // Query from 1 week before the oldest bucket to catch all applications that might fall into it
+  // gte is set 1 week before the oldest bucket — slightly wider than strictly needed.
+  // The bucket-key lookup below is the real filter; out-of-range rows are silently dropped.
   const since = new Date(buckets[0].start);
   since.setDate(since.getDate() - 7);
 
