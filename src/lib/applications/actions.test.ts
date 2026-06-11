@@ -5,12 +5,13 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 const appCreate = vi.fn().mockResolvedValue({ id: "app1" });
 const appUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
 const appUpdate = vi.fn().mockResolvedValue({ id: "app1" });
-const appFindFirst = vi.fn();
+const appFindFirst = vi.fn().mockResolvedValue({ status: "saved" });
 const appDelete = vi.fn().mockResolvedValue({ id: "app1" });
 const appCount = vi.fn().mockResolvedValue(0);
 const jobCreate = vi.fn().mockResolvedValue({ id: "job1" });
 const jobUpdate = vi.fn().mockResolvedValue({ id: "job1" });
 const jobDelete = vi.fn().mockResolvedValue({ id: "job1" });
+const appEventCreate = vi.fn().mockResolvedValue({});
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -27,6 +28,9 @@ vi.mock("@/lib/db", () => ({
       update: (...a: any) => jobUpdate(...a),
       delete: (...a: any) => jobDelete(...a),
     },
+    applicationEvent: {
+      create: (...a: any) => appEventCreate(...a),
+    },
   },
 }));
 
@@ -42,12 +46,13 @@ beforeEach(() => {
   appCreate.mockClear();
   appUpdateMany.mockClear();
   appUpdate.mockClear();
-  appFindFirst.mockReset();
+  appFindFirst.mockReset().mockResolvedValue({ status: "saved" });
   appDelete.mockClear();
   appCount.mockReset().mockResolvedValue(0);
   jobCreate.mockClear();
   jobUpdate.mockClear();
   jobDelete.mockClear();
+  appEventCreate.mockClear();
 });
 
 describe("addApplication (unchanged)", () => {

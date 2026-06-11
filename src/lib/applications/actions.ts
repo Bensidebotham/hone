@@ -2,31 +2,68 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { recordApplicationEvent } from "@/lib/applications/events";
 
 type Status = "saved" | "applied" | "interviewing" | "offer" | "rejected";
 
 export async function addApplication(jobId: string) {
   const user = await requireUser();
-  await prisma.application.create({ data: { userId: user.id, jobId, status: "saved" } });
+  const app = await prisma.application.create({
+    data: { userId: user.id, jobId, status: "saved" },
+  });
+  await recordApplicationEvent({
+    applicationId: app.id,
+    userId: user.id,
+    type: "created",
+    toStatus: "saved",
+  });
   revalidatePath("/applications");
 }
 
 export async function updateStatus(applicationId: string, status: Status) {
   const user = await requireUser();
+  const current = await prisma.application.findFirst({
+    where: { id: applicationId, userId: user.id },
+    select: { status: true },
+  });
+  if (!current) return;
   await prisma.application.updateMany({
     where: { id: applicationId, userId: user.id },
     data: { status, appliedAt: status === "applied" ? new Date() : undefined },
   });
+  if (current.status !== status) {
+    await recordApplicationEvent({
+      applicationId,
+      userId: user.id,
+      type: "status_change",
+      fromStatus: current.status,
+      toStatus: status,
+    });
+  }
   revalidatePath("/applications");
 }
 
 /** Set status to Applied and stamp the applied date to now (always overwrites). */
 export async function markAppliedToday(applicationId: string) {
   const user = await requireUser();
+  const current = await prisma.application.findFirst({
+    where: { id: applicationId, userId: user.id },
+    select: { status: true },
+  });
+  if (!current) return;
   await prisma.application.updateMany({
     where: { id: applicationId, userId: user.id },
     data: { status: "applied", appliedAt: new Date() },
   });
+  if (current.status !== "applied") {
+    await recordApplicationEvent({
+      applicationId,
+      userId: user.id,
+      type: "status_change",
+      fromStatus: current.status,
+      toStatus: "applied",
+    });
+  }
   revalidatePath("/applications");
 }
 
@@ -74,7 +111,7 @@ export async function createManualApplication(input: ManualApplicationInput) {
     },
   });
 
-  await prisma.application.create({
+  const application = await prisma.application.create({
     data: {
       userId: user.id,
       jobId: job.id,
@@ -82,6 +119,13 @@ export async function createManualApplication(input: ManualApplicationInput) {
       notes: input.notes?.trim() || null,
       appliedAt,
     },
+  });
+
+  await recordApplicationEvent({
+    applicationId: application.id,
+    userId: user.id,
+    type: "created",
+    toStatus: input.status,
   });
 
   revalidatePath("/applications");
