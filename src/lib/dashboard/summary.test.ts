@@ -15,6 +15,9 @@ vi.mock("@/lib/dashboard/new-jobs", () => ({
 vi.mock("@/lib/health/app-updates", () => ({
   getRecentAppUpdates: vi.fn().mockResolvedValue([{ id: "e1", isNew: true }]),
 }));
+vi.mock("@/lib/gmail/suggestions", () => ({
+  getPendingSuggestions: vi.fn().mockResolvedValue([]),
+}));
 
 import { getDashboardSummary } from "@/lib/dashboard/summary";
 
@@ -27,6 +30,7 @@ describe("getDashboardSummary", () => {
       applicationTrend: [{ weekStart: "2026-06-08", count: 2 }],
       newJobs: [{ id: "j1" }],
       appUpdates: [{ id: "e1", isNew: true }],
+      pendingSuggestions: [],
     });
     // removed fields
     expect(summary).not.toHaveProperty("stats");

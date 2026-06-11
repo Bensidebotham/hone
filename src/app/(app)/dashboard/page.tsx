@@ -3,6 +3,7 @@ import { getDashboardSummary } from "@/lib/dashboard/summary";
 import { stampDashboardVisit } from "@/lib/dashboard/digest-window";
 import { ApplicationTrendChart } from "@/components/dashboard/application-trend-chart";
 import { UpdatesFeed } from "@/components/dashboard/updates-feed";
+import { SuggestedUpdates } from "@/components/dashboard/suggested-updates";
 import { NewJobsRail } from "@/components/dashboard/new-jobs-rail";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export default async function Dashboard() {
 
       <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr]">
         <div className="space-y-5">
+          <SuggestedUpdates suggestions={summary.pendingSuggestions} />
           <UpdatesFeed updates={summary.appUpdates} />
           {/* ApplicationTrendChart already renders its own Card with title — render directly, no wrapper */}
           <ApplicationTrendChart points={summary.applicationTrend} />
