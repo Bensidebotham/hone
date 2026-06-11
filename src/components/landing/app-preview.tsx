@@ -7,9 +7,9 @@ export function AppPreview() {
     { label: "Response rate", value: "31%" },
   ];
   const funnel = [
-    { label: "Saved", v: 12, w: "w-full" },
-    { label: "Applied", v: 42, w: "w-4/5" },
-    { label: "Interviewing", v: 3, w: "w-2/5" },
+    { label: "Saved", v: 42, w: "w-full" },
+    { label: "Applied", v: 28, w: "w-4/5" },
+    { label: "Interviewing", v: 6, w: "w-2/5" },
     { label: "Offer", v: 1, w: "w-1/5" },
   ];
 
@@ -32,7 +32,7 @@ export function AppPreview() {
       <div className="mt-3 grid grid-cols-3 gap-3">
         <div className="col-span-2 rounded-lg bg-muted/60 p-3">
           <p className="mb-2 text-[10px] font-medium text-muted-foreground">Applications over time</p>
-          <svg viewBox="0 0 200 60" className="h-16 w-full" preserveAspectRatio="none">
+          <svg viewBox="0 0 200 60" className="h-16 w-full" preserveAspectRatio="none" aria-hidden="true">
             <polyline
               points="0,50 30,42 60,46 90,30 120,34 150,18 200,12"
               fill="none"
@@ -46,7 +46,10 @@ export function AppPreview() {
           <div className="space-y-1.5">
             {funnel.map((f) => (
               <div key={f.label} className="flex items-center gap-2">
-                <div className={`h-2 rounded-full bg-primary/70 ${f.w}`} />
+                <div className="flex-1">
+                  <div className={`h-2 rounded-full bg-primary/70 ${f.w}`} />
+                </div>
+                <span className="w-16 shrink-0 truncate text-[9px] text-muted-foreground">{f.label}</span>
               </div>
             ))}
           </div>

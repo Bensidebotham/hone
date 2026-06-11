@@ -18,7 +18,7 @@ export function Hero() {
         <Reveal delay={0.05}>
           <h1 className="mx-auto mt-3 max-w-3xl text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
             Land your next role,{" "}
-            <span className="relative whitespace-nowrap">
+            <span className="relative isolate whitespace-nowrap">
               sharper
               <span className="absolute inset-x-0 -bottom-1 h-3 -z-10 bg-highlight/70" />
             </span>
