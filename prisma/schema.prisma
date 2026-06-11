@@ -22,6 +22,8 @@ model User {
   savedJobs            UserSavedJob[]
   resumeGoals          ResumeGoal[]
   appEvents            ApplicationEvent[]
+  gmailConnection      GmailConnection?
+  emailInsights        EmailInsight[]
   lastDashboardVisitAt DateTime?
   createdAt            DateTime          @default(now())
 }
@@ -179,7 +181,14 @@ enum AppStatus {
 enum AppEventType {
   created
   status_change
-  // future: email_detected (written by the Gmail integration)
+  email_detected
+}
+
+enum EmailOutcome {
+  auto_applied
+  suggested
+  accepted
+  dismissed
 }
 
 model ApplicationEvent {
@@ -209,7 +218,8 @@ model Application {
   updatedAt DateTime  @updatedAt
   user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   job       Job                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  events    ApplicationEvent[]
+  events        ApplicationEvent[]
+  emailInsights EmailInsight[]
 }
 
 model HealthScore {
@@ -245,4 +255,35 @@ model ResumeGoal {
   resume         Resume    @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   @@unique([resumeId, suggestionText])
+}
+
+model GmailConnection {
+  userId       String    @id
+  historyId    String?
+  syncEnabled  Boolean   @default(true)
+  connectedAt  DateTime  @default(now())
+  lastSyncedAt DateTime?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model EmailInsight {
+  id              String       @id @default(cuid())
+  userId          String
+  messageId       String       @unique
+  threadId        String?
+  fromEmail       String
+  subject         String?
+  snippet         String?
+  kind            String
+  suggestedStatus AppStatus?
+  applicationId   String?
+  company         String?
+  title           String?
+  confidence      Float
+  outcome         EmailOutcome
+  createdAt       DateTime     @default(now())
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  application     Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, outcome])
 }
