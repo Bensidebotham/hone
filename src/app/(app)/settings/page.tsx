@@ -1,13 +1,25 @@
-import { LogOut } from "lucide-react";
+import { LogOut, Mail } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { signOutAction } from "@/app/actions/auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { prisma } from "@/lib/db";
+import { connectGmail, disconnectGmail } from "@/lib/gmail/oauth";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const user = await requireUser();
+
+  const connection = await prisma.gmailConnection.findUnique({ where: { userId: user.id } });
+  const account = await prisma.account.findFirst({
+    where: { userId: user.id, provider: "google" },
+    select: { scope: true, refresh_token: true },
+  });
+  const gmailConnected =
+    Boolean(connection) &&
+    Boolean(account?.scope?.includes("gmail.readonly")) &&
+    Boolean(account?.refresh_token);
 
   return (
     <div>
@@ -49,6 +61,38 @@ export default async function SettingsPage() {
               </Button>
             </form>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6 max-w-xl hover:shadow-sm transition-shadow">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mail className="h-5 w-5" aria-hidden="true" /> Gmail
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            {gmailConnected
+              ? `Connected. Hone reads job-search emails and updates your applications automatically.${
+                  connection?.lastSyncedAt
+                    ? ` Last synced ${connection.lastSyncedAt.toLocaleString()}.`
+                    : ""
+                }`
+              : "Connect Gmail so application confirmations, interview invites, offers, and rejections update your tracker automatically."}
+          </p>
+          {gmailConnected ? (
+            <form action={disconnectGmail}>
+              <Button type="submit" variant="outline" size="sm">
+                Disconnect
+              </Button>
+            </form>
+          ) : (
+            <form action={connectGmail}>
+              <Button type="submit" size="sm">
+                Connect Gmail
+              </Button>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
