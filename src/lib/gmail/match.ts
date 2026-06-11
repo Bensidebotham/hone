@@ -50,7 +50,9 @@ export function matchApplication(
   if (input.company) {
     const target = normalizeCompany(input.company);
     if (target) {
-      const hit = norm.find((c) => c.key === target || c.key.includes(target) || target.includes(c.key));
+      const hit = norm.find(
+        (c) => c.key !== "" && (c.key === target || c.key.includes(target) || target.includes(c.key))
+      );
       if (hit) return { applicationId: hit.applicationId, currentStatus: hit.status };
     }
   }
@@ -58,7 +60,9 @@ export function matchApplication(
   // 2) Fall back to a direct-company sender domain.
   const token = senderCompanyToken(input.fromEmail);
   if (token) {
-    const hit = norm.find((c) => c.key === token || c.key.includes(token) || token.includes(c.key));
+    const hit = norm.find(
+      (c) => c.key !== "" && (c.key === token || c.key.includes(token) || token.includes(c.key))
+    );
     if (hit) return { applicationId: hit.applicationId, currentStatus: hit.status };
   }
 

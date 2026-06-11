@@ -28,4 +28,11 @@ describe("matchApplication", () => {
     const m = matchApplication({ fromEmail: "no-reply@lever.co", company: null }, candidates);
     expect(m.applicationId).toBeNull();
   });
+
+  it("does not false-match a candidate whose name normalizes to empty", () => {
+    // "Co." strips to "" — must not become a wildcard that matches everything.
+    const degenerate: AppCandidate[] = [{ applicationId: "app-co", company: "Co.", status: "applied" }];
+    const m = matchApplication({ fromEmail: "no-reply@greenhouse.io", company: "Initech" }, degenerate);
+    expect(m.applicationId).toBeNull();
+  });
 });

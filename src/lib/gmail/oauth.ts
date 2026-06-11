@@ -35,7 +35,7 @@ export async function disconnectGmail() {
   await prisma.gmailConnection.deleteMany({ where: { userId: user.id } });
   await prisma.account.updateMany({
     where: { userId: user.id, provider: "google" },
-    data: { scope: "openid email profile" },
+    data: { scope: "openid email profile", access_token: null, refresh_token: null, expires_at: null },
   });
 
   revalidatePath("/settings");

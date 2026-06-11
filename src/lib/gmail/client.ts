@@ -64,17 +64,23 @@ function decodeB64Url(data: string): string {
   return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
 }
 
-/** Walk the MIME tree for the first text/plain part; fall back to text/html stripped. */
-function extractBody(payload: any): string {
-  if (!payload) return "";
-  if (payload.mimeType === "text/plain" && payload.body?.data) return decodeB64Url(payload.body.data);
+/** Find the first part of a given MIME type anywhere in the tree, returning its base64url data. */
+function findPartData(payload: any, mimeType: string): string | null {
+  if (!payload) return null;
+  if (payload.mimeType === mimeType && payload.body?.data) return payload.body.data;
   for (const part of payload.parts ?? []) {
-    const text = extractBody(part);
-    if (text) return text;
+    const found = findPartData(part, mimeType);
+    if (found) return found;
   }
-  if (payload.mimeType === "text/html" && payload.body?.data) {
-    return decodeB64Url(payload.body.data).replace(/<[^>]+>/g, " ");
-  }
+  return null;
+}
+
+/** Prefer text/plain anywhere in the tree; otherwise fall back to text/html stripped of tags. */
+function extractBody(payload: any): string {
+  const plain = findPartData(payload, "text/plain");
+  if (plain) return decodeB64Url(plain);
+  const html = findPartData(payload, "text/html");
+  if (html) return decodeB64Url(html).replace(/<[^>]+>/g, " ");
   return "";
 }
 
