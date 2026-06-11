@@ -1,10 +1,22 @@
 // src/lib/dashboard/new-jobs.ts
 import { prisma } from "@/lib/db";
+import { buildJobWhere } from "@/lib/jobs/filters";
 
-export async function getNewJobs24h(limit = 25) {
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+/**
+ * New jobs for the digest: the same curated pool the Jobs page shows
+ * (via buildJobWhere with default params), posted since `windowStart`,
+ * excluding any job already in the user's pipeline.
+ */
+export async function getNewJobsForUser(userId: string, windowStart: Date, limit = 5) {
+  const curated = buildJobWhere({}, userId);
   return prisma.job.findMany({
-    where: { source: "ats", postedAt: { gte: since } },
+    where: {
+      AND: [
+        curated,
+        { postedAt: { gte: windowStart } },
+        { applications: { none: { userId } } },
+      ],
+    },
     orderBy: { postedAt: "desc" },
     take: limit,
   });

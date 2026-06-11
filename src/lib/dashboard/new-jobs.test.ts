@@ -1,38 +1,39 @@
-// src/lib/dashboard/new-jobs.test.ts
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 const findMany = vi.fn().mockResolvedValue([]);
 vi.mock("@/lib/db", () => ({
   prisma: { job: { findMany: (...a: any) => findMany(...a) } },
 }));
 
-beforeEach(() => {
-  findMany.mockClear();
-});
+import { getNewJobsForUser } from "@/lib/dashboard/new-jobs";
 
-import { getNewJobs24h } from "@/lib/dashboard/new-jobs";
+describe("getNewJobsForUser", () => {
+  it("filters by curated pool, window, and excludes the user's pipeline jobs", async () => {
+    const windowStart = new Date("2026-06-09T00:00:00Z");
+    await getNewJobsForUser("user-abc", windowStart);
 
-describe("getNewJobs24h", () => {
-  it("filters source=ats and postedAt within the last 24h", async () => {
-    const before = Date.now();
-    await getNewJobs24h();
-    const args = findMany.mock.calls[0][0];
-    expect(args.where.source).toBe("ats");
-    const gte: Date = args.where.postedAt.gte;
-    expect(gte).toBeInstanceOf(Date);
-    const expected = before - 24 * 60 * 60 * 1000;
-    expect(Math.abs(gte.getTime() - expected)).toBeLessThan(1000);
-  });
+    const [args] = findMany.mock.calls;
+    const where = args[0].where;
 
-  it("orders by postedAt desc and defaults take=25", async () => {
-    await getNewJobs24h();
-    const args = findMany.mock.calls[0][0];
-    expect(args.orderBy).toEqual({ postedAt: "desc" });
-    expect(args.take).toBe(25);
+    // composed with AND of: curated base, posted window, not-in-pipeline
+    expect(Array.isArray(where.AND)).toBe(true);
+
+    const flat = JSON.stringify(where);
+    // curated pool markers from buildJobWhere
+    expect(flat).toContain('"active":true');
+    expect(flat).toContain('"roleCategory"');
+    // window
+    expect(where.AND.some((c: any) => c.postedAt?.gte?.getTime?.() === windowStart.getTime())).toBe(true);
+    // pipeline exclusion
+    expect(where.AND.some((c: any) => c.applications?.none?.userId === "user-abc")).toBe(true);
+
+    expect(args[0].orderBy).toEqual({ postedAt: "desc" });
+    expect(args[0].take).toBe(5);
   });
 
   it("honours a custom limit", async () => {
-    await getNewJobs24h(5);
-    expect(findMany.mock.calls[findMany.mock.calls.length - 1][0].take).toBe(5);
+    await getNewJobsForUser("user-abc", new Date(), 10);
+    const [args] = findMany.mock.calls;
+    expect(args[0].take).toBe(10);
   });
 });
