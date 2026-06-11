@@ -36,7 +36,7 @@ export function InterviewingCard({ rows }: { rows: InterviewRow[] }) {
               {visible.map((row) => (
                 <li
                   key={row.id}
-                  className="flex items-center justify-between gap-2 text-sm rounded-md px-2 py-1.5 -mx-2 hover:bg-muted/50 transition-colors"
+                  className="flex items-start justify-between gap-2 text-sm rounded-md px-2 py-1.5 -mx-2 hover:bg-muted/50 transition-colors"
                 >
                   <div className="min-w-0">
                     <span className="font-medium truncate block">{row.jobTitle}</span>

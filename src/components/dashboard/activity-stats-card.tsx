@@ -13,7 +13,7 @@ function Tile({
 }) {
   return (
     <Card className="hover:shadow-sm transition-shadow">
-      <div className="flex flex-col gap-1 px-(--card-spacing) py-(--card-spacing)">
+      <div className="flex flex-col gap-1 px-(--card-spacing)">
         <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           {accent && <span className="h-1.5 w-1.5 rounded-full bg-highlight" />}
           {label}
