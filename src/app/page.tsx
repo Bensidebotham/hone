@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { LandingNav } from "@/components/landing/landing-nav";
 import { Hero } from "@/components/landing/hero";
 import { FeatureGrid } from "@/components/landing/feature-grid";
+import { FeatureShowcase } from "@/components/landing/feature-showcase";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { StatsBand } from "@/components/landing/stats-band";
 import { Faq } from "@/components/landing/faq";
@@ -18,6 +19,7 @@ export default async function Home() {
       <main className="flex-1">
         <Hero />
         <FeatureGrid />
+        <FeatureShowcase />
         <HowItWorks />
         <StatsBand />
         <Faq />
