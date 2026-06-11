@@ -13,6 +13,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "database" },
   providers: [Google],
   callbacks: {
+    async signIn({ user, account }) {
+      // When the Connect-Gmail flow re-auths with gmail.readonly, capture the
+      // refreshed tokens onto the existing Account row (adapter won't).
+      if (account?.provider === "google" && account.scope?.includes("gmail.readonly")) {
+        await prisma.account.updateMany({
+          where: { provider: "google", providerAccountId: account.providerAccountId },
+          data: {
+            access_token: account.access_token,
+            expires_at: account.expires_at,
+            scope: account.scope,
+            // Google only returns a refresh_token with prompt=consent; don't clobber with undefined.
+            ...(account.refresh_token ? { refresh_token: account.refresh_token } : {}),
+          },
+        });
+        // Mark the connection live; seed historyId lazily on first sync.
+        if (user?.id) {
+          await prisma.gmailConnection.upsert({
+            where: { userId: user.id },
+            create: { userId: user.id, syncEnabled: true },
+            update: { syncEnabled: true },
+          });
+        }
+      }
+      return true;
+    },
     session({ session, user }) {
       if (session.user) session.user.id = user.id;
       return session;
