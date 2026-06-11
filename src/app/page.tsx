@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { LandingNav } from "@/components/landing/landing-nav";
+import { Hero } from "@/components/landing/hero";
 
 export default async function Home() {
   const session = await auth();
@@ -10,9 +11,7 @@ export default async function Home() {
     <div id="top" className="flex min-h-screen flex-col bg-background">
       <LandingNav />
       <main className="flex-1">
-        <p className="mx-auto max-w-6xl px-6 py-24 text-muted-foreground">
-          Landing sections go here.
-        </p>
+        <Hero />
       </main>
     </div>
   );
