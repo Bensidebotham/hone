@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, type AppStatus } from "@prisma/client";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { ApplicationsTable } from "@/components/applications-table";
@@ -8,10 +8,28 @@ export const dynamic = "force-dynamic";
 
 export type AppWithJob = Prisma.ApplicationGetPayload<{ include: { job: true } }>;
 
-export default async function ApplicationsPage() {
+const VALID_STATUSES: AppStatus[] = [
+  "saved",
+  "applied",
+  "interviewing",
+  "offer",
+  "rejected",
+];
+
+export default async function ApplicationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   const user = await requireUser();
+  const { status } = await searchParams;
+  const statusFilter =
+    status && VALID_STATUSES.includes(status as AppStatus)
+      ? (status as AppStatus)
+      : undefined;
+
   const apps = await prisma.application.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, ...(statusFilter ? { status: statusFilter } : {}) },
     include: { job: true },
     orderBy: { updatedAt: "desc" },
   });
@@ -23,7 +41,7 @@ export default async function ApplicationsPage() {
           <p className="text-sm font-semibold text-primary">Tracker</p>
           <h1 className="text-3xl font-extrabold tracking-tight">Applications</h1>
           <p className="text-muted-foreground mt-1">
-            Every role you're chasing — in one place that beats a spreadsheet.
+            Every role you&apos;re chasing — in one place that beats a spreadsheet.
           </p>
         </div>
         <AddJobDialog />

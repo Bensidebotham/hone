@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const FUNNEL_LABELS: Record<string, string> = {
@@ -21,14 +22,16 @@ export function FunnelCard({ funnel }: FunnelCardProps) {
         <CardTitle>Application Funnel</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-1">
           {FUNNEL_ORDER.map((status) => (
-            <div key={status} className="flex items-center justify-between text-sm">
+            <Link
+              key={status}
+              href={`/applications?status=${status}`}
+              className="flex items-center justify-between rounded-md px-2 py-1.5 -mx-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
               <span className="text-muted-foreground">{FUNNEL_LABELS[status]}</span>
-              <span className="font-semibold text-base tabular-nums">
-                {funnel[status]}
-              </span>
-            </div>
+              <span className="font-semibold text-base tabular-nums">{funnel[status]}</span>
+            </Link>
           ))}
         </div>
       </CardContent>
