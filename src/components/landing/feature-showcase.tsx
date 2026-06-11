@@ -5,7 +5,7 @@ const SHOTS = [
   {
     eyebrow: "Fresh jobs, every 24 hours",
     title: "A daily feed of roles worth your time",
-    body: "Early-career roles, pulled straight from company boards and filtered to what you actually want — search, filter, and save without tab-hopping across a dozen career pages.",
+    body: "Roles pulled straight from company boards and filtered to what you actually want — search, filter, and save without tab-hopping across a dozen career pages.",
     src: "/screenshots/jobs.png",
     label: "hone · jobs",
     alt: "The Hone jobs page: a searchable, filterable feed of engineering roles with a detail panel open",

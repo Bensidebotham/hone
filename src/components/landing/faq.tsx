@@ -13,7 +13,7 @@ const FAQS = [
   },
   {
     q: "How do jobs get added?",
-    a: "Hone surfaces fresh early-career roles every 24 hours. You can also paste any job to track it.",
+    a: "Hone surfaces fresh roles every 24 hours. You can also paste any job to track it.",
   },
   {
     q: "Is my data private?",
@@ -21,7 +21,7 @@ const FAQS = [
   },
   {
     q: "What roles are covered?",
-    a: "The daily feed focuses on software and early-career tech roles across the US and remote.",
+    a: "The daily feed covers software and tech roles across the US and remote — and you can paste any role to track it.",
   },
 ];
 

@@ -11,7 +11,7 @@ const FEATURES = [
   {
     icon: CalendarClock,
     title: "Fresh jobs, every 24 hours",
-    body: "Early-career roles surfaced daily, so you never miss a new posting.",
+    body: "New roles surfaced daily, so you never miss a fresh posting.",
   },
   {
     icon: Sparkles,
