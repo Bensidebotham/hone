@@ -46,6 +46,7 @@ describe("getSavedNotApplied", () => {
     await getSavedNotApplied("u1");
     const args = findMany.mock.calls[0][0];
     expect(args.where).toEqual({ userId: "u1", status: "saved" });
+    expect(args.include).toEqual({ job: true });
     expect(args.orderBy).toEqual({ updatedAt: "desc" });
     expect(args.take).toBe(8);
   });
