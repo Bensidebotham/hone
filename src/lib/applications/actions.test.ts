@@ -37,6 +37,7 @@ vi.mock("@/lib/db", () => ({
 import {
   addApplication,
   updateStatus,
+  markAppliedToday,
   createManualApplication,
   updateApplicationDetails,
   deleteApplication,
@@ -268,6 +269,32 @@ describe("createManualApplication — event emission", () => {
         }),
       })
     );
+  });
+});
+
+describe("markAppliedToday — event emission", () => {
+  it("emits a status_change event with toStatus 'applied' when status changes", async () => {
+    // appFindFirst default returns { status: "saved" } (set in beforeEach)
+    await markAppliedToday("a1");
+    expect(appEventCreate).toHaveBeenCalledOnce();
+    expect(appEventCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          type: "status_change",
+          fromStatus: "saved",
+          toStatus: "applied",
+          applicationId: "a1",
+          userId: "u1",
+        }),
+      })
+    );
+  });
+
+  it("does NOT emit an event when already applied", async () => {
+    appFindFirst.mockResolvedValue({ status: "applied" });
+    await markAppliedToday("a1");
+    expect(appEventCreate).not.toHaveBeenCalled();
+    expect(appUpdateMany).toHaveBeenCalledOnce();
   });
 });
 
