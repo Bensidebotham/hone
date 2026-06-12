@@ -9,7 +9,7 @@
 [![Prisma](https://img.shields.io/badge/Prisma-2D3748?logo=prisma&logoColor=white)](https://www.prisma.io)
 [![Postgres](https://img.shields.io/badge/Neon_Postgres-008000?logo=postgresql&logoColor=white)](https://neon.tech)
 [![Trigger.dev](https://img.shields.io/badge/Trigger.dev-A78BFA)](https://trigger.dev)
-[![Tests](https://img.shields.io/badge/tests-vitest_%2B_playwright-6E9F18?logo=vitest&logoColor=white)](#testing)
+[![CI](https://github.com/Bensidebotham/hone/actions/workflows/ci.yml/badge.svg)](https://github.com/Bensidebotham/hone/actions/workflows/ci.yml)
 
 [**Live demo**](https://your-live-url.vercel.app) · [Features](#features) · [Architecture](#architecture) · [Local setup](#local-development)
 
