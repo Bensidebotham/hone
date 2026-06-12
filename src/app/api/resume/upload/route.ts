@@ -3,11 +3,19 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { extractText } from "@/lib/resume/extract";
 import { analyzeResume } from "@/trigger/analyze-resume";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const user = await requireUser();
+  const rl = rateLimit(`ai:${user.id}`, 20, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+    );
+  }
   const form = await req.formData();
   const file = form.get("file");
   // Use duck-type check: `instanceof File` fails in test environments where undici

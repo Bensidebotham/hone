@@ -3,11 +3,19 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { scoreMatch } from "@/lib/match/score";
+import { rateLimit } from "@/lib/rate-limit";
 
 const Body = z.object({ jobId: z.string().min(1), resumeId: z.string().optional() });
 
 export async function POST(req: Request) {
   const user = await requireUser();
+  const rl = rateLimit(`ai:${user.id}`, 20, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+    );
+  }
   const parsed = Body.safeParse(await req.json());
   if (!parsed.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });
 

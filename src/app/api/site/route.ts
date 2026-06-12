@@ -4,11 +4,19 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { analyzeSite } from "@/trigger/analyze-site";
 import { assertAllowedSiteUrl } from "@/lib/profile/fetch-site";
+import { rateLimit } from "@/lib/rate-limit";
 
 const Body = z.object({ url: z.url() });
 
 export async function POST(req: Request) {
   const user = await requireUser();
+  const rl = rateLimit(`ai:${user.id}`, 20, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfter) } }
+    );
+  }
   const p = Body.safeParse(await req.json());
   if (!p.success) return NextResponse.json({ error: "Invalid" }, { status: 400 });
   // Synchronous guard: reject blocklisted/SSRF hosts up front with a clear 400
