@@ -5,11 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
 import { connectGmail, disconnectGmail } from "@/lib/gmail/oauth";
+import { isDemoEmail } from "@/lib/demo/config";
 
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const user = await requireUser();
+  const isDemo = isDemoEmail(user.email);
 
   const connection = await prisma.gmailConnection.findUnique({ where: { userId: user.id } });
   const account = await prisma.account.findFirst({
@@ -72,7 +74,9 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">
-            {gmailConnected
+            {isDemo
+              ? "Connecting a real inbox is disabled in the demo — but the dashboard already shows simulated email-detected updates and suggestions."
+              : gmailConnected
               ? `Connected. Hone reads job-search emails and updates your applications automatically.${
                   connection?.lastSyncedAt
                     ? ` Last synced ${connection.lastSyncedAt.toLocaleString()}.`
@@ -80,7 +84,11 @@ export default async function SettingsPage() {
                 }`
               : "Connect Gmail so application confirmations, interview invites, offers, and rejections update your tracker automatically."}
           </p>
-          {gmailConnected ? (
+          {isDemo ? (
+            <Button type="button" size="sm" disabled>
+              Connect Gmail
+            </Button>
+          ) : gmailConnected ? (
             <form action={disconnectGmail}>
               <Button type="submit" variant="outline" size="sm">
                 Disconnect

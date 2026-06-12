@@ -4,11 +4,15 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { analyzeLinkedin } from "@/trigger/analyze-linkedin";
 import { rateLimit } from "@/lib/rate-limit";
+import { isDemoEmail } from "@/lib/demo/config";
 
 const Body = z.object({ profileText: z.string().min(20) });
 
 export async function POST(req: Request) {
   const user = await requireUser();
+  if (isDemoEmail(user.email)) {
+    return NextResponse.json({ error: "This feature is disabled in the demo." }, { status: 403 });
+  }
   const rl = rateLimit(`ai:${user.id}`, 20, 60_000);
   if (!rl.ok) {
     return NextResponse.json(

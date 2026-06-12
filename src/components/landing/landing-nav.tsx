@@ -1,4 +1,5 @@
 import { signInWithGoogle } from "@/app/actions/auth";
+import { startDemo } from "@/lib/demo/actions";
 import { Button } from "@/components/ui/button";
 
 export function LandingNav() {
@@ -17,9 +18,14 @@ export function LandingNav() {
           <a href="#how" className="hover:text-foreground transition-colors">How it works</a>
           <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
         </nav>
-        <form action={signInWithGoogle}>
-          <Button type="submit" size="sm">Sign in</Button>
-        </form>
+        <div className="flex items-center gap-2">
+          <form action={startDemo}>
+            <Button type="submit" variant="ghost" size="sm">Try demo</Button>
+          </form>
+          <form action={signInWithGoogle}>
+            <Button type="submit" size="sm">Sign in</Button>
+          </form>
+        </div>
       </div>
     </header>
   );

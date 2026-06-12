@@ -1,4 +1,4 @@
-import { signInWithGoogle } from "@/app/actions/auth";
+import { startDemo } from "@/lib/demo/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Reveal } from "@/components/landing/reveal";
 import { AppPreview } from "@/components/landing/app-preview";
@@ -33,8 +33,8 @@ export function Hero() {
         </Reveal>
         <Reveal delay={0.15}>
           <div className="mt-8 flex items-center justify-center gap-3">
-            <form action={signInWithGoogle}>
-              <Button type="submit" size="lg">Get started →</Button>
+            <form action={startDemo}>
+              <Button type="submit" size="lg">Try the demo →</Button>
             </form>
             <a href="#how" className={buttonVariants({ variant: "outline", size: "lg" })}>
               See how it works

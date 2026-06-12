@@ -3,11 +3,16 @@
 import { signIn, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { isDemoEmail } from "@/lib/demo/config";
 
 const GMAIL_SCOPE = "openid email profile https://www.googleapis.com/auth/gmail.readonly";
 
 /** Start the incremental Gmail OAuth consent (adds gmail.readonly + offline access). */
 export async function connectGmail() {
+  const user = await requireUser();
+  // The demo account can't connect a real inbox.
+  if (isDemoEmail(user.email)) redirect("/settings");
   await signIn(
     "google",
     { redirectTo: "/settings" },

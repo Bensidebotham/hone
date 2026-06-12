@@ -4,11 +4,15 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { scoreMatch } from "@/lib/match/score";
 import { rateLimit } from "@/lib/rate-limit";
+import { isDemoEmail } from "@/lib/demo/config";
 
 const Body = z.object({ jobId: z.string().min(1), resumeId: z.string().optional() });
 
 export async function POST(req: Request) {
   const user = await requireUser();
+  if (isDemoEmail(user.email)) {
+    return NextResponse.json({ error: "This feature is disabled in the demo." }, { status: 403 });
+  }
   const rl = rateLimit(`ai:${user.id}`, 20, 60_000);
   if (!rl.ok) {
     return NextResponse.json(

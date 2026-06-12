@@ -4,11 +4,15 @@ import { prisma } from "@/lib/db";
 import { extractText } from "@/lib/resume/extract";
 import { analyzeResume } from "@/trigger/analyze-resume";
 import { rateLimit } from "@/lib/rate-limit";
+import { isDemoEmail } from "@/lib/demo/config";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   const user = await requireUser();
+  if (isDemoEmail(user.email)) {
+    return NextResponse.json({ error: "This feature is disabled in the demo." }, { status: 403 });
+  }
   const rl = rateLimit(`ai:${user.id}`, 20, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
