@@ -11,7 +11,7 @@
 [![Trigger.dev](https://img.shields.io/badge/Trigger.dev-A78BFA)](https://trigger.dev)
 [![CI](https://github.com/Bensidebotham/hone/actions/workflows/ci.yml/badge.svg)](https://github.com/Bensidebotham/hone/actions/workflows/ci.yml)
 
-[**Live demo**](https://your-live-url.vercel.app) · [Features](#features) · [Architecture](#architecture) · [Local setup](#local-development)
+[**Live demo**](https://hone-nu.vercel.app) · [Features](#features) · [Architecture](#architecture) · [Local setup](#local-development)
 
 </div>
 
