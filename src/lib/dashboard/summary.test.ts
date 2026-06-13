@@ -18,11 +18,17 @@ vi.mock("@/lib/health/app-updates", () => ({
 vi.mock("@/lib/gmail/suggestions", () => ({
   getPendingSuggestions: vi.fn().mockResolvedValue([]),
 }));
+vi.mock("@/lib/dashboard/stats", () => ({
+  getActivityStats: vi.fn().mockResolvedValue({ appliedThisWeek: 3 }),
+}));
+vi.mock("@/lib/dashboard/lists", () => ({
+  getInterviewing: vi.fn().mockResolvedValue([{ id: "a1" }]),
+}));
 
 import { getDashboardSummary } from "@/lib/dashboard/summary";
 
 describe("getDashboardSummary", () => {
-  it("returns only digest data: window, applicationTrend, newJobs, appUpdates", async () => {
+  it("returns digest data plus the activity stats + interviewing rail modules", async () => {
     const summary = await getDashboardSummary("user-abc");
 
     expect(summary).toEqual({
@@ -31,11 +37,11 @@ describe("getDashboardSummary", () => {
       newJobs: [{ id: "j1" }],
       appUpdates: [{ id: "e1", isNew: true }],
       pendingSuggestions: [],
+      activityStats: { appliedThisWeek: 3 },
+      interviewing: [{ id: "a1" }],
     });
-    // removed fields
-    expect(summary).not.toHaveProperty("stats");
+    // still-removed fields
     expect(summary).not.toHaveProperty("funnel");
-    expect(summary).not.toHaveProperty("interviewing");
     expect(summary).not.toHaveProperty("savedNotApplied");
   });
 });

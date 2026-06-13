@@ -2,8 +2,11 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-const SELECT_CLASS =
-  "h-8 rounded-full border border-input bg-transparent px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 transition-colors dark:bg-input/30";
+const PILL_BASE =
+  "h-9 appearance-none rounded-full border bg-card pl-4 pr-9 text-sm font-semibold " +
+  "outline-none transition-colors cursor-pointer focus-visible:ring-3 focus-visible:ring-ring/50";
+const PILL_IDLE = "border-border text-foreground hover:border-primary";
+const PILL_ACTIVE = "border-transparent bg-secondary text-secondary-foreground";
 
 const SORT_OPTIONS = [["", "Sort: Newest"], ["salary", "Sort: Highest salary"]] as const;
 
@@ -49,17 +52,27 @@ export function JobFilterChips() {
     options: ReadonlyArray<readonly [string, string]>;
     current: string;
   }) {
+    const active = current !== "";
     return (
-      <select
-        aria-label={name}
-        className={SELECT_CLASS}
-        value={current}
-        onChange={(e) => setParam(name, e.target.value)}
-      >
-        {options.map(([value, label]) => (
-          <option key={value} value={value}>{label}</option>
-        ))}
-      </select>
+      <div className="relative inline-flex">
+        <select
+          aria-label={name}
+          value={current}
+          onChange={(e) => setParam(name, e.target.value)}
+          className={`${PILL_BASE} ${active ? PILL_ACTIVE : PILL_IDLE}`}
+        >
+          {options.map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
+        </select>
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+          className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 opacity-60"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </div>
     );
   }
 
@@ -76,7 +89,11 @@ export function JobFilterChips() {
       <Chip name="level" options={LEVEL_OPTIONS} current={sp.get("level") ?? ""} />
       <Chip name="techTags" options={TECH_OPTIONS} current={sp.get("techTags") ?? ""} />
       <Chip name="salaryMin" options={SALARY_OPTIONS} current={sp.get("salaryMin") ?? ""} />
-      <label className="flex h-8 items-center gap-2 cursor-pointer text-sm rounded-full border border-input px-3">
+      <label
+        className={`flex h-9 cursor-pointer items-center gap-2 rounded-full border px-4 text-sm font-semibold transition-colors ${
+          remote ? "border-transparent bg-secondary text-secondary-foreground" : "border-border hover:border-primary"
+        }`}
+      >
         <input
           type="checkbox"
           checked={remote}

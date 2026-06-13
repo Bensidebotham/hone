@@ -67,7 +67,7 @@ export function JobListItem({
           )}
         </div>
         <div className="text-sm">
-          {job.salary && <span className="text-green-600">{job.salary}</span>}
+          {job.salary && <span className="font-semibold tabular-nums text-foreground">{job.salary}</span>}
           {job.salary && job.postedAt ? " · " : ""}
           <span className="text-muted-foreground">{postedAgo(job.postedAt)}</span>
         </div>

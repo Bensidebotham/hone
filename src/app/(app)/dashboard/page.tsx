@@ -5,6 +5,8 @@ import { ApplicationTrendChart } from "@/components/dashboard/application-trend-
 import { UpdatesFeed } from "@/components/dashboard/updates-feed";
 import { SuggestedUpdates } from "@/components/dashboard/suggested-updates";
 import { NewJobsRail } from "@/components/dashboard/new-jobs-rail";
+import { InterviewingCard } from "@/components/dashboard/interviewing-card";
+import { ActivityStatsCard } from "@/components/dashboard/activity-stats-card";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +19,6 @@ export default async function Dashboard() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm font-semibold text-primary">Dashboard</p>
         <h1 className="text-3xl font-extrabold tracking-tight">
           Good morning, {user.name ?? "there"}
         </h1>
@@ -25,6 +26,8 @@ export default async function Dashboard() {
           Here&apos;s what&apos;s new since you last checked.
         </p>
       </div>
+
+      <ActivityStatsCard stats={summary.activityStats} />
 
       <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr]">
         <div className="space-y-5">
@@ -34,15 +37,18 @@ export default async function Dashboard() {
           <ApplicationTrendChart points={summary.applicationTrend} />
         </div>
 
-        <NewJobsRail
-          jobs={summary.newJobs.map((j) => ({
-            id: j.id,
-            title: j.title,
-            company: j.company,
-            location: j.location,
-            url: j.url,
-          }))}
-        />
+        <div className="space-y-5">
+          <NewJobsRail
+            jobs={summary.newJobs.map((j) => ({
+              id: j.id,
+              title: j.title,
+              company: j.company,
+              location: j.location,
+              url: j.url,
+            }))}
+          />
+          <InterviewingCard rows={summary.interviewing} />
+        </div>
       </div>
     </div>
   );

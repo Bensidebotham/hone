@@ -15,7 +15,6 @@ function JobsHeader({ savedCount, totalCount, isSavedView, filterKeys }: { saved
   return (
     <>
       <div className="mb-4">
-        <p className="text-sm font-semibold text-primary">Jobs</p>
         <h1 className="text-3xl font-extrabold tracking-tight">
           Find your next role
           <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-highlight align-middle" aria-hidden="true" />

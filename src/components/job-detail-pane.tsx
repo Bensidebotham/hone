@@ -34,7 +34,14 @@ export function JobDetailPane({ job }: { job: JobDetailData | null }) {
           <p className="text-muted-foreground truncate">
             {job.company}
             {job.location ? ` · ${job.location}` : ""}
-            {job.salary ? ` · ${job.salary}` : ""}
+            {job.salary && (
+              <>
+                {" · "}
+                <span className="font-semibold text-foreground px-0.5 [background:linear-gradient(transparent_60%,var(--highlight)_60%)]">
+                  {job.salary}
+                </span>
+              </>
+            )}
           </p>
         </div>
       </div>
