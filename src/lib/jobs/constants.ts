@@ -1,4 +1,4 @@
-import type { Prisma } from "@prisma/client";
+import type { Prisma, JobSource } from "@prisma/client";
 
 export const JOBS_PAGE_SIZE = 25;
 
@@ -24,13 +24,15 @@ export interface JobListRow {
   roleCategory: string | null;
   level: string | null;
   techTags: string[];
-  descriptionText: string;
-  descriptionHtml: string | null;
+  source: JobSource;
 }
 
-/** Prisma select matching JobListRow — shared by feed/grouped/action queries. */
+/** Prisma select matching JobListRow — shared by feed/grouped/action queries.
+ *  Deliberately excludes descriptionText/descriptionHtml (the ~19KB-per-row fields):
+ *  the list never renders them, so they're loaded on demand via getJobDescription
+ *  when a job is opened. `source` lets us flag aggregator (apply-out) listings cheaply. */
 export const JOB_LIST_SELECT = {
   id: true, title: true, company: true, location: true, url: true,
   salary: true, postedAt: true, roleCategory: true, level: true,
-  techTags: true, descriptionText: true, descriptionHtml: true,
+  techTags: true, source: true,
 } as const;

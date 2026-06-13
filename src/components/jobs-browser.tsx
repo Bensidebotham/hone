@@ -15,8 +15,7 @@ export { toBrowserJob, type BrowserJob };
 function toDetail(j: BrowserJob): JobDetailData {
   return {
     id: j.id, title: j.title, company: j.company, location: j.location,
-    salary: j.salary, url: j.url, descriptionText: j.descriptionText,
-    descriptionHtml: j.descriptionHtml,
+    salary: j.salary, url: j.url, external: j.external,
   };
 }
 

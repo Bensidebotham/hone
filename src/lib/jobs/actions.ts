@@ -29,3 +29,15 @@ export async function getJobDetail(id: string): Promise<JobListRow | null> {
   await requireUser();
   return prisma.job.findUnique({ where: { id }, select: JOB_LIST_SELECT });
 }
+
+/** Fetch just the heavy description for one job, on demand (kept out of the list
+ *  query so browsing the feed doesn't ship descriptions that are never read). */
+export async function getJobDescription(
+  id: string,
+): Promise<{ descriptionText: string; descriptionHtml: string | null } | null> {
+  await requireUser();
+  return prisma.job.findUnique({
+    where: { id },
+    select: { descriptionText: true, descriptionHtml: true },
+  });
+}

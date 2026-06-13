@@ -19,5 +19,7 @@ export async function getNewJobsForUser(userId: string, windowStart: Date, limit
     },
     orderBy: { postedAt: "desc" },
     take: limit,
+    // The rail only renders these fields — never select the heavy description blobs.
+    select: { id: true, title: true, company: true, location: true, url: true },
   });
 }
