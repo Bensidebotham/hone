@@ -9,7 +9,12 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
-import { getFunnel, getConversion } from "@/lib/analytics/personal";
+import {
+  getFunnel,
+  getConversion,
+  getTimeInStage,
+  median,
+} from "@/lib/analytics/personal";
 
 describe("getFunnel", () => {
   beforeEach(() => {
@@ -54,5 +59,57 @@ describe("getConversion", () => {
     const c = getConversion({ applied: 0, interviewing: 0, offer: 0, rejected: 0 });
     expect(c.appliedToInterview).toBeNull();
     expect(c.interviewToOffer).toBeNull();
+  });
+});
+
+describe("median", () => {
+  it("returns the middle of an odd-length sorted set", () => {
+    expect(median([3, 1, 2])).toBe(2);
+  });
+  it("averages the two middle values for even length", () => {
+    expect(median([1, 2, 3, 4])).toBe(2.5);
+  });
+  it("returns null for empty input", () => {
+    expect(median([])).toBeNull();
+  });
+});
+
+describe("getTimeInStage", () => {
+  beforeEach(() => findMany.mockReset());
+
+  const ev = (
+    applicationId: string,
+    fromStatus: string | null,
+    toStatus: string | null,
+    iso: string,
+  ) => ({ applicationId, fromStatus, toStatus, createdAt: new Date(iso) });
+
+  it("scopes to user + status_change events", async () => {
+    findMany.mockResolvedValue([]);
+    await getTimeInStage("u1");
+    const arg = findMany.mock.calls[0][0];
+    expect(arg.where.userId).toBe("u1");
+    expect(arg.where.type).toBe("status_change");
+  });
+
+  it("computes median applied->response and interview->decision in days", async () => {
+    findMany.mockResolvedValue([
+      // app a: applied day 0, response (interviewing) day 2  -> 2d
+      ev("a", null, "applied", "2026-01-01T00:00:00Z"),
+      ev("a", "applied", "interviewing", "2026-01-03T00:00:00Z"),
+      // app b: applied day 0, response day 4 -> 4d
+      ev("b", null, "applied", "2026-01-01T00:00:00Z"),
+      ev("b", "applied", "rejected", "2026-01-05T00:00:00Z"),
+      // app c: applied day 0, response day 6 -> 6d
+      ev("c", null, "applied", "2026-01-01T00:00:00Z"),
+      ev("c", "applied", "interviewing", "2026-01-07T00:00:00Z"),
+      // app c also interview day 6 -> offer day 8 -> 2d decision
+      ev("c", "interviewing", "offer", "2026-01-09T00:00:00Z"),
+    ]);
+    const t = await getTimeInStage("u1");
+    expect(t.appliedToResponseN).toBe(3);
+    expect(t.appliedToResponseDays).toBe(4); // median(2,4,6)
+    expect(t.interviewToDecisionN).toBe(1);
+    expect(t.interviewToDecisionDays).toBeNull(); // n < 3
   });
 });
