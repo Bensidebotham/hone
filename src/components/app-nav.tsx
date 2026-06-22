@@ -7,6 +7,7 @@ import {
   UserRound,
   Briefcase,
   ClipboardList,
+  BarChart3,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const navItems: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/applications", label: "Applications", icon: ClipboardList },
   { href: "/jobs", label: "Jobs", icon: Briefcase },
+  { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/profile", label: "Profile", icon: UserRound, match: ["/resume"] },
 ];
 
