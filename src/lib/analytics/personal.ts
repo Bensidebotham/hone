@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import type { Funnel, Conversion, TimeInStage } from "./types";
+import type { Funnel, Conversion, TimeInStage, PersonalAnalytics } from "./types";
 
 const DAY_MS = 1000 * 60 * 60 * 24;
 
@@ -88,4 +88,14 @@ export async function getTimeInStage(userId: string): Promise<TimeInStage> {
     interviewToDecisionN: decision.length,
     interviewToDecisionDays: decision.length >= 3 ? round(median(decision)) : null,
   };
+}
+
+export async function getPersonalAnalytics(
+  userId: string,
+): Promise<PersonalAnalytics> {
+  const [funnel, timeInStage] = await Promise.all([
+    getFunnel(userId),
+    getTimeInStage(userId),
+  ]);
+  return { funnel, conversion: getConversion(funnel), timeInStage };
 }

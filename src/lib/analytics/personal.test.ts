@@ -13,6 +13,7 @@ import {
   getFunnel,
   getConversion,
   getTimeInStage,
+  getPersonalAnalytics,
   median,
 } from "@/lib/analytics/personal";
 
@@ -111,5 +112,20 @@ describe("getTimeInStage", () => {
     expect(t.appliedToResponseDays).toBe(4); // median(2,4,6)
     expect(t.interviewToDecisionN).toBe(1);
     expect(t.interviewToDecisionDays).toBeNull(); // n < 3
+  });
+});
+
+describe("getPersonalAnalytics", () => {
+  it("bundles funnel, conversion, and time-in-stage", async () => {
+    groupBy.mockResolvedValue([
+      { status: "applied", _count: { _all: 8 } },
+      { status: "interviewing", _count: { _all: 2 } },
+    ]);
+    findMany.mockResolvedValue([]);
+    const a = await getPersonalAnalytics("u1");
+    expect(a.funnel.applied).toBe(10); // 8 + 2
+    expect(a.funnel.interviewing).toBe(2);
+    expect(a.conversion.appliedToInterview).toBe(20);
+    expect(a.timeInStage.appliedToResponseN).toBe(0);
   });
 });
