@@ -1,14 +1,13 @@
 // scripts/seed-applications.ts
 //
-// Seeds mock applications from a tracked CSV export of a job-search
-// spreadsheet (scripts/seed/summer-2026.csv). Each row becomes a
-// `paste`-source Job (run through the same enrichment as real ingest) plus a
-// linked Application — mirroring createManualApplication() in
-// src/lib/applications/actions.ts.
+// Seeds standalone applications from a tracked CSV export of a job-search
+// spreadsheet (scripts/seed/summer-2026.csv). Each row becomes a flat
+// Application row directly (no Job model — that feature was removed).
 //
-// Idempotent: every seeded job is tagged with an externalId of
-// `seed:<DATASET>:<n>`, so re-running first deletes the prior seed (and only
-// the seed — real manual applications are never touched).
+// Idempotent: re-running wipes ALL applications for the target user and
+// reseeds from the CSV (mirrors the reset pattern in src/lib/demo/seed.ts).
+// This script is meant for a personal/dev account seeded only from this CSV;
+// it is not safe to run against an account with unrelated real applications.
 //
 //   pnpm seed                       # seeds for the first/only user
 //   SEED_EMAIL=you@example.com pnpm seed
@@ -16,7 +15,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { prisma } from "@/lib/db";
-import { enrichJob, type EmploymentType } from "@/lib/jobs/enrich";
 
 const DATASET = "summer-2026";
 const CSV_PATH = join(process.cwd(), "scripts", "seed", `${DATASET}.csv`);
@@ -109,17 +107,9 @@ async function main() {
   const data = rows.slice(1).filter((r) => (r[0] ?? "").trim().length > 0);
   console.log(`Parsed ${data.length} rows from ${CSV_PATH}`);
 
-  // --- Idempotent reset: drop ONLY this dataset's prior seed ---
-  const prior = await prisma.job.findMany({
-    where: { userId: user.id, source: "paste", externalId: { startsWith: `seed:${DATASET}:` } },
-    select: { id: true },
-  });
-  if (prior.length) {
-    const ids = prior.map((j) => j.id);
-    const delApps = await prisma.application.deleteMany({ where: { jobId: { in: ids } } });
-    const delJobs = await prisma.job.deleteMany({ where: { id: { in: ids } } });
-    console.log(`Reset prior seed: removed ${delApps.count} applications, ${delJobs.count} jobs`);
-  }
+  // --- Idempotent reset: wipe this user's applications and reseed ---
+  const delApps = await prisma.application.deleteMany({ where: { userId: user.id } });
+  console.log(`Reset prior seed: removed ${delApps.count} applications`);
 
   const tally: Record<AppStatus, number> = { saved: 0, applied: 0, interviewing: 0, offer: 0, rejected: 0 };
 
@@ -137,33 +127,19 @@ async function main() {
     const appliedAt = status === "saved" ? null : explicitDate ?? syntheticDate(i);
     const createdAt = appliedAt ?? syntheticDate(i);
 
-    const e = enrichJob({ title, location, descriptionText: "", salary });
-
-    const job = await prisma.job.create({
+    await prisma.application.create({
       data: {
         userId: user.id,
-        source: "paste",
-        externalId: `seed:${DATASET}:${i}`,
         company,
         title,
         location,
         url,
         salary,
-        descriptionText: "",
+        status,
+        notes,
+        appliedAt,
         createdAt,
-        country: e.country,
-        isRemote: e.isRemote,
-        roleCategory: e.roleCategory,
-        level: e.level,
-        techTags: e.techTags,
-        salaryMin: e.salaryMin,
-        salaryMax: e.salaryMax,
-        employmentType: e.employmentType satisfies EmploymentType,
       },
-    });
-
-    await prisma.application.create({
-      data: { userId: user.id, jobId: job.id, status, notes, appliedAt, createdAt },
     });
 
     tally[status]++;

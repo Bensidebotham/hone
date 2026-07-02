@@ -89,25 +89,16 @@ export async function reseedDemoData(userId: string): Promise<void> {
   await prisma.emailInsight.deleteMany({ where: { userId } });
   await prisma.applicationEvent.deleteMany({ where: { userId } });
   await prisma.application.deleteMany({ where: { userId } });
-  await prisma.job.deleteMany({ where: { userId } });
 
   const appByCompany = new Map<string, string>();
 
   for (const a of DEMO_APPS) {
-    const job = await prisma.job.create({
-      data: {
-        userId,
-        source: "paste",
-        company: a.company,
-        title: a.title,
-        location: a.location,
-        descriptionText: "",
-      },
-    });
     const application = await prisma.application.create({
       data: {
         userId,
-        jobId: job.id,
+        company: a.company,
+        title: a.title,
+        location: a.location,
         status: a.status,
         appliedAt: a.status === "saved" ? null : daysAgoDate(a.daysAgo - 1),
         createdAt: daysAgoDate(a.daysAgo),
