@@ -6,11 +6,7 @@ const appCreate = vi.fn().mockResolvedValue({ id: "app1" });
 const appUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
 const appUpdate = vi.fn().mockResolvedValue({ id: "app1" });
 const appFindFirst = vi.fn().mockResolvedValue({ status: "saved" });
-const appDelete = vi.fn().mockResolvedValue({ id: "app1" });
-const appCount = vi.fn().mockResolvedValue(0);
-const jobCreate = vi.fn().mockResolvedValue({ id: "job1" });
-const jobUpdate = vi.fn().mockResolvedValue({ id: "job1" });
-const jobDelete = vi.fn().mockResolvedValue({ id: "job1" });
+const appDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
 const appEventCreate = vi.fn().mockResolvedValue({});
 
 vi.mock("@/lib/db", () => ({
@@ -20,13 +16,7 @@ vi.mock("@/lib/db", () => ({
       updateMany: (...a: any) => appUpdateMany(...a),
       update: (...a: any) => appUpdate(...a),
       findFirst: (...a: any) => appFindFirst(...a),
-      delete: (...a: any) => appDelete(...a),
-      count: (...a: any) => appCount(...a),
-    },
-    job: {
-      create: (...a: any) => jobCreate(...a),
-      update: (...a: any) => jobUpdate(...a),
-      delete: (...a: any) => jobDelete(...a),
+      deleteMany: (...a: any) => appDeleteMany(...a),
     },
     applicationEvent: {
       create: (...a: any) => appEventCreate(...a),
@@ -35,7 +25,6 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import {
-  addApplication,
   updateStatus,
   markAppliedToday,
   createManualApplication,
@@ -48,23 +37,8 @@ beforeEach(() => {
   appUpdateMany.mockClear();
   appUpdate.mockClear();
   appFindFirst.mockReset().mockResolvedValue({ status: "saved" });
-  appDelete.mockClear();
-  appCount.mockReset().mockResolvedValue(0);
-  jobCreate.mockClear();
-  jobUpdate.mockClear();
-  jobDelete.mockClear();
+  appDeleteMany.mockClear();
   appEventCreate.mockClear();
-});
-
-describe("addApplication (unchanged)", () => {
-  it("creates a saved app for the user", async () => {
-    await addApplication("j1");
-    expect(appCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ userId: "u1", jobId: "j1", status: "saved" }),
-      })
-    );
-  });
 });
 
 describe("updateStatus (unchanged)", () => {
@@ -77,39 +51,28 @@ describe("updateStatus (unchanged)", () => {
 });
 
 describe("createManualApplication", () => {
-  it("creates a paste-source job then a linked application", async () => {
+  it("creates a standalone application with flat fields", async () => {
+    appCreate.mockResolvedValue({ id: "app1" });
     await createManualApplication({
       company: "Stripe",
-      title: "Software Engineer",
+      title: "SWE",
       status: "applied",
-      url: "https://x.co",
+      url: "https://x",
       salary: "$180k",
       location: "Remote",
-      appliedAt: new Date("2024-05-01"),
-      notes: "referred",
+      description: "JD text",
     });
-    expect(jobCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          userId: "u1",
-          source: "paste",
-          company: "Stripe",
-          title: "Software Engineer",
-          location: "Remote",
-          url: "https://x.co",
-          salary: "$180k",
-          descriptionText: "",
-        }),
-      })
-    );
     expect(appCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           userId: "u1",
-          jobId: "job1",
+          company: "Stripe",
+          title: "SWE",
           status: "applied",
-          notes: "referred",
-          appliedAt: new Date("2024-05-01"),
+          url: "https://x",
+          salary: "$180k",
+          location: "Remote",
+          description: "JD text",
         }),
       })
     );
@@ -122,7 +85,7 @@ describe("createManualApplication", () => {
     await expect(
       createManualApplication({ company: "Acme", title: "", status: "saved" })
     ).rejects.toThrow(/role|title/i);
-    expect(jobCreate).not.toHaveBeenCalled();
+    expect(appCreate).not.toHaveBeenCalled();
   });
 
   it("defaults appliedAt to now when status is past 'saved' and no date given", async () => {
@@ -139,70 +102,49 @@ describe("createManualApplication", () => {
 });
 
 describe("updateApplicationDetails", () => {
-  it("updates application fields and the paste job's fields", async () => {
-    appFindFirst.mockResolvedValue({
-      id: "app1",
-      jobId: "job1",
-      job: { id: "job1", source: "paste" },
-    });
+  it("writes the provided flat fields onto the application", async () => {
+    appFindFirst.mockResolvedValue({ id: "app1", userId: "u1" });
     await updateApplicationDetails("app1", {
       notes: "n",
       appliedAt: new Date("2024-06-01"),
       salary: "$200k",
       location: "NYC",
       url: "https://y.co",
+      description: "updated JD",
     });
     expect(appUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "app1" },
-        data: expect.objectContaining({ notes: "n", appliedAt: new Date("2024-06-01") }),
+        data: expect.objectContaining({
+          notes: "n",
+          appliedAt: new Date("2024-06-01"),
+          salary: "$200k",
+          location: "NYC",
+          url: "https://y.co",
+          description: "updated JD",
+        }),
       })
     );
-    expect(jobUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: "job1" },
-        data: expect.objectContaining({ salary: "$200k", location: "NYC", url: "https://y.co" }),
-      })
-    );
-  });
-
-  it("does NOT edit job fields for an ats-sourced posting", async () => {
-    appFindFirst.mockResolvedValue({
-      id: "app1",
-      jobId: "job1",
-      job: { id: "job1", source: "ats" },
-    });
-    await updateApplicationDetails("app1", { notes: "n" });
-    expect(appUpdate).toHaveBeenCalled();
-    expect(jobUpdate).not.toHaveBeenCalled();
   });
 
   it("is a no-op when the application is not owned by the user", async () => {
     appFindFirst.mockResolvedValue(null);
     await updateApplicationDetails("nope", { notes: "n" });
     expect(appUpdate).not.toHaveBeenCalled();
-    expect(jobUpdate).not.toHaveBeenCalled();
   });
 
-  it("does not wipe job fields that were omitted from a partial update", async () => {
-    appFindFirst.mockResolvedValue({
-      id: "app1",
-      jobId: "job1",
-      job: { id: "job1", source: "paste" },
-    });
+  it("does not wipe fields that were omitted from a partial update", async () => {
+    appFindFirst.mockResolvedValue({ id: "app1", userId: "u1" });
     await updateApplicationDetails("app1", { notes: "just notes" });
-    const jobData = jobUpdate.mock.calls[0][0].data;
-    expect(jobData.salary).toBeUndefined();
-    expect(jobData.location).toBeUndefined();
-    expect(jobData.url).toBeUndefined();
+    const data = appUpdate.mock.calls[0][0].data;
+    expect(data.salary).toBeUndefined();
+    expect(data.location).toBeUndefined();
+    expect(data.url).toBeUndefined();
+    expect(data.description).toBeUndefined();
   });
 
   it("clears appliedAt when explicitly passed null", async () => {
-    appFindFirst.mockResolvedValue({
-      id: "app1",
-      jobId: "job1",
-      job: { id: "job1", source: "paste" },
-    });
+    appFindFirst.mockResolvedValue({ id: "app1", userId: "u1" });
     await updateApplicationDetails("app1", { appliedAt: null });
     expect(appUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -235,23 +177,6 @@ describe("updateStatus — event emission", () => {
     await updateStatus("a1", "interviewing");
     expect(appEventCreate).not.toHaveBeenCalled();
     expect(appUpdateMany).toHaveBeenCalledOnce();
-  });
-});
-
-describe("addApplication — event emission", () => {
-  it("emits a created event with toStatus 'saved'", async () => {
-    await addApplication("job1");
-    expect(appEventCreate).toHaveBeenCalledOnce();
-    expect(appEventCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          type: "created",
-          toStatus: "saved",
-          applicationId: "app1",
-          userId: "u1",
-        }),
-      })
-    );
   });
 });
 
@@ -299,33 +224,10 @@ describe("markAppliedToday — event emission", () => {
 });
 
 describe("deleteApplication", () => {
-  it("deletes the application and an orphaned paste job", async () => {
-    appFindFirst.mockResolvedValue({ id: "app1", jobId: "job1", job: { id: "job1", source: "paste" } });
-    appCount.mockResolvedValue(0);
+  it("deletes the application scoped to the user", async () => {
     await deleteApplication("app1");
-    expect(appDelete).toHaveBeenCalledWith({ where: { id: "app1" } });
-    expect(jobDelete).toHaveBeenCalledWith({ where: { id: "job1" } });
-  });
-
-  it("keeps a paste job that still has other applications", async () => {
-    appFindFirst.mockResolvedValue({ id: "app1", jobId: "job1", job: { id: "job1", source: "paste" } });
-    appCount.mockResolvedValue(2);
-    await deleteApplication("app1");
-    expect(appDelete).toHaveBeenCalled();
-    expect(jobDelete).not.toHaveBeenCalled();
-  });
-
-  it("never deletes an ats-sourced job", async () => {
-    appFindFirst.mockResolvedValue({ id: "app1", jobId: "job1", job: { id: "job1", source: "ats" } });
-    appCount.mockResolvedValue(0);
-    await deleteApplication("app1");
-    expect(appDelete).toHaveBeenCalled();
-    expect(jobDelete).not.toHaveBeenCalled();
-  });
-
-  it("is a no-op when the application is not owned by the user", async () => {
-    appFindFirst.mockResolvedValue(null);
-    await deleteApplication("nope");
-    expect(appDelete).not.toHaveBeenCalled();
+    expect(appDeleteMany).toHaveBeenCalledWith({
+      where: { id: "app1", userId: "u1" },
+    });
   });
 });

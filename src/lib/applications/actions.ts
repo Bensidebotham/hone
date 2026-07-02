@@ -6,20 +6,6 @@ import { recordApplicationEvent } from "@/lib/applications/events";
 
 type Status = "saved" | "applied" | "interviewing" | "offer" | "rejected";
 
-export async function addApplication(jobId: string) {
-  const user = await requireUser();
-  const app = await prisma.application.create({
-    data: { userId: user.id, jobId, status: "saved" },
-  });
-  await recordApplicationEvent({
-    applicationId: app.id,
-    userId: user.id,
-    type: "created",
-    toStatus: "saved",
-  });
-  revalidatePath("/applications");
-}
-
 export async function updateStatus(applicationId: string, status: Status) {
   const user = await requireUser();
   const current = await prisma.application.findFirst({
@@ -33,11 +19,8 @@ export async function updateStatus(applicationId: string, status: Status) {
   });
   if (current.status !== status) {
     await recordApplicationEvent({
-      applicationId,
-      userId: user.id,
-      type: "status_change",
-      fromStatus: current.status,
-      toStatus: status,
+      applicationId, userId: user.id, type: "status_change",
+      fromStatus: current.status, toStatus: status,
     });
   }
   revalidatePath("/applications");
@@ -57,11 +40,8 @@ export async function markAppliedToday(applicationId: string) {
   });
   if (current.status !== "applied") {
     await recordApplicationEvent({
-      applicationId,
-      userId: user.id,
-      type: "status_change",
-      fromStatus: current.status,
-      toStatus: "applied",
+      applicationId, userId: user.id, type: "status_change",
+      fromStatus: current.status, toStatus: "applied",
     });
   }
   revalidatePath("/applications");
@@ -83,11 +63,12 @@ export interface ManualApplicationInput {
   url?: string;
   salary?: string;
   location?: string;
+  description?: string;
   appliedAt?: Date | null;
   notes?: string;
 }
 
-/** Create a paste-source Job + a linked Application for a job the app never ingested. */
+/** Create a standalone application for a role tracked anywhere. */
 export async function createManualApplication(input: ManualApplicationInput) {
   const user = await requireUser();
   const company = input.company.trim();
@@ -98,24 +79,16 @@ export async function createManualApplication(input: ManualApplicationInput) {
   const appliedAt =
     input.appliedAt ?? (input.status !== "saved" ? new Date() : null);
 
-  const job = await prisma.job.create({
-    data: {
-      userId: user.id,
-      source: "paste",
-      company,
-      title,
-      location: input.location?.trim() || null,
-      url: input.url?.trim() || null,
-      salary: input.salary?.trim() || null,
-      descriptionText: "",
-    },
-  });
-
   const application = await prisma.application.create({
     data: {
       userId: user.id,
-      jobId: job.id,
+      company,
+      title,
       status: input.status,
+      url: input.url?.trim() || null,
+      salary: input.salary?.trim() || null,
+      location: input.location?.trim() || null,
+      description: input.description?.trim() || null,
       notes: input.notes?.trim() || null,
       appliedAt,
     },
@@ -137,13 +110,10 @@ export interface ApplicationDetailInput {
   salary?: string;
   location?: string;
   url?: string;
+  description?: string;
 }
 
-/**
- * Update an application's own fields (notes, appliedAt). Job fields
- * (salary/location/url) are only editable for paste-source jobs — ats
- * postings are treated as immutable shared records.
- */
+/** Update an application's own fields. All fields live on Application now. */
 export async function updateApplicationDetails(
   applicationId: string,
   input: ApplicationDetailInput
@@ -151,7 +121,7 @@ export async function updateApplicationDetails(
   const user = await requireUser();
   const app = await prisma.application.findFirst({
     where: { id: applicationId, userId: user.id },
-    include: { job: true },
+    select: { id: true },
   });
   if (!app) return;
 
@@ -159,44 +129,22 @@ export async function updateApplicationDetails(
     where: { id: app.id },
     data: {
       notes: input.notes ?? undefined,
-      // Pass an explicit null through (clears the date); skip only when omitted.
       appliedAt: input.appliedAt === undefined ? undefined : input.appliedAt,
+      salary: input.salary !== undefined ? input.salary.trim() || null : undefined,
+      location: input.location !== undefined ? input.location.trim() || null : undefined,
+      url: input.url !== undefined ? input.url.trim() || null : undefined,
+      description: input.description !== undefined ? input.description.trim() || null : undefined,
     },
   });
-
-  if (app.job.source === "paste") {
-    await prisma.job.update({
-      where: { id: app.jobId },
-      data: {
-        // Only overwrite a field when the caller actually provided it,
-        // so a partial update never wipes existing values.
-        salary: input.salary !== undefined ? input.salary.trim() || null : undefined,
-        location: input.location !== undefined ? input.location.trim() || null : undefined,
-        url: input.url !== undefined ? input.url.trim() || null : undefined,
-      },
-    });
-  }
 
   revalidatePath("/applications");
 }
 
-/** Delete an application; clean up its backing paste job if now orphaned. */
+/** Delete an application. */
 export async function deleteApplication(applicationId: string) {
   const user = await requireUser();
-  const app = await prisma.application.findFirst({
+  await prisma.application.deleteMany({
     where: { id: applicationId, userId: user.id },
-    include: { job: true },
   });
-  if (!app) return;
-
-  await prisma.application.delete({ where: { id: app.id } });
-
-  if (app.job.source === "paste") {
-    const remaining = await prisma.application.count({ where: { jobId: app.jobId } });
-    if (remaining === 0) {
-      await prisma.job.delete({ where: { id: app.jobId } });
-    }
-  }
-
   revalidatePath("/applications");
 }
