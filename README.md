@@ -2,7 +2,7 @@
 
 # Hone
 
-**Your job search, organized — track every application, catch fresh jobs daily, and sharpen your resume in one place that beats a spreadsheet.**
+**Your job search, organized — track every application, sync updates straight from your inbox, and sharpen your resume in one place that beats a spreadsheet.**
 
 [![Next.js](https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white)](https://nextjs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -17,17 +17,16 @@
 
 ---
 
-Hone is a full-stack job-search command center. It pulls fresh roles from company ATS boards and aggregators every hour, lets you track applications through a kanban or power-table, analyzes your resume / LinkedIn / personal site with AI, and surfaces it all as a daily digest. Connect Gmail and it reads your inbox to move applications to *Interviewing*, *Offer*, or *Rejected* automatically.
+Hone is a full-stack job-search command center. It lets you track applications through a kanban or power-table, analyzes your resume / LinkedIn / personal site with AI, and surfaces it all as a daily digest. Connect Gmail and it reads your inbox to move applications to *Interviewing*, *Offer*, or *Rejected* automatically.
 
 <div align="center">
-  <img src="public/screenshots/dashboard.png" alt="Hone dashboard — daily digest with updates feed, application trend, and fresh jobs" width="900">
+  <img src="public/screenshots/dashboard.png" alt="Hone dashboard — daily digest with updates feed and application trend" width="900">
 </div>
 
 ## Features
 
-- **📊 Daily dashboard digest** — an updates feed of what changed since your last visit, an application-volume trend chart, and a rail of newly posted jobs that match your search.
-- **🗂️ Application tracker** — manage applications in a sortable/filterable power-table or a drag-and-drop kanban board; add roles manually or straight from the job feed; every status change is logged as an event.
-- **🔎 Live job feed** — roles ingested hourly from company ATS boards (Greenhouse, Lever, Ashby, …) and aggregators, enriched with location, level, salary, and tech tags, with rich filtering and one-click save.
+- **📊 Daily dashboard digest** — an updates feed of what changed since your last visit and an application-volume trend chart.
+- **🗂️ Application tracker** — manage applications in a sortable/filterable power-table or a drag-and-drop kanban board; add roles manually, including a job description for later resume tailoring; every status change is logged as an event.
 - **🤖 AI analysis (Gemini)** — upload a resume (PDF/DOCX) for an ATS-readiness score, keyword gaps, and prioritized suggestions; analyze a LinkedIn profile or personal site the same way.
 - **📧 Gmail auto-updates** — opt-in Gmail connection reads job-search emails and updates the matching application's status automatically; high-confidence changes apply on their own, the rest surface as one-tap suggestions. *(Privacy-first: only job-relevant mail is ever read or stored.)*
 - **🔐 Google sign-in** — Auth.js v5 with database-backed sessions.
@@ -40,7 +39,7 @@ Hone is a full-stack job-search command center. It pulls fresh roles from compan
 | Language | **TypeScript** (strict) | End-to-end type safety from DB rows to React props. |
 | Database | **Neon Postgres** + **Prisma** | Serverless Postgres over a typed ORM; schema-as-source-of-truth with migrations. |
 | Auth | **Auth.js v5** (Google) | Database sessions via the Prisma adapter; incremental OAuth scopes for Gmail. |
-| Background jobs | **Trigger.dev** | Durable scheduled tasks for hourly job polling and Gmail sync. |
+| Background jobs | **Trigger.dev** | Durable scheduled tasks for Gmail sync and AI analysis. |
 | AI | **Google Gemini** (`gemini-2.5-flash`) | Structured JSON analysis of resumes, profiles, and emails. |
 | UI | **Tailwind CSS** + **shadcn/Base UI**, **Recharts**, **dnd-kit**, **Motion** | Composable components, charts, drag-and-drop, and scroll animations. |
 | Testing | **Vitest** + **Testing Library**, **Playwright** | Unit/logic coverage plus end-to-end specs across every page. |
@@ -48,11 +47,11 @@ Hone is a full-stack job-search command center. It pulls fresh roles from compan
 ## Architecture
 
 ```
-┌─────────────────────── Next.js (App Router) ───────────────────────┐
-│  Server Components  →  read via Prisma           (dashboard, jobs)  │
-│  Server Actions     →  mutations + revalidation  (apply, status)    │
-│  Route Handlers     →  uploads, OAuth callback, AI analysis         │
-└───────────────┬─────────────────────────────────┬──────────────────┘
+┌───────────────────── Next.js (App Router) ─────────────────────┐
+│  Server Components  →  read via Prisma      (dashboard, apps)   │
+│  Server Actions     →  mutations + revalidation  (apply, status)│
+│  Route Handlers     →  uploads, OAuth callback, AI analysis     │
+└───────────────┬─────────────────────────────────┬──────────────┘
                 │                                  │
         ┌───────▼────────┐                 ┌───────▼────────┐
         │  Neon Postgres │                 │  Google Gemini │
@@ -60,7 +59,6 @@ Hone is a full-stack job-search command center. It pulls fresh roles from compan
         └───────▲────────┘                 │  email class.) │
                 │                          └────────────────┘
         ┌───────┴──────────────── Trigger.dev ──────────────┐
-        │  poll-jobs  (hourly)   →  ingest ATS + aggregators │
         │  sync-gmail (15 min)   →  History API → classify   │
         └────────────────────────────────────────────────────┘
 ```
@@ -69,9 +67,9 @@ The **`ApplicationEvent`** table is the spine of the app: every status change �
 
 ## Screenshots
 
-| Applications | Job feed |
-|---|---|
-| ![Applications](public/screenshots/applications.png) | ![Jobs](public/screenshots/jobs.png) |
+| Applications |
+|---|
+| ![Applications](public/screenshots/applications.png) |
 
 ## Local development
 
@@ -120,8 +118,8 @@ The suite covers scoring/matching logic, dashboard aggregation, application even
 src/
   app/           # App Router routes: (app) authenticated area + landing
   components/    # UI, landing, and dashboard components
-  lib/           # Domain logic — applications, jobs, resume, gmail, ai, health
-  trigger/       # Trigger.dev scheduled tasks (poll-jobs, sync-gmail)
+  lib/           # Domain logic — applications, analytics, resume, gmail, ai, health
+  trigger/       # Trigger.dev scheduled tasks (sync-gmail, AI analysis)
 prisma/          # Schema + migrations
 e2e/             # Playwright specs
 ```

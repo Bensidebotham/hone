@@ -3,12 +3,12 @@ import { Reveal } from "@/components/landing/reveal";
 
 const SHOTS = [
   {
-    eyebrow: "Fresh jobs, every 24 hours",
-    title: "A daily feed of roles worth your time",
-    body: "Roles pulled straight from company boards and filtered to what you actually want — search, filter, and save without tab-hopping across a dozen career pages.",
-    src: "/screenshots/jobs.png",
-    label: "hone · jobs",
-    alt: "The Hone jobs page: a searchable, filterable feed of engineering roles with a detail panel open",
+    eyebrow: "Your inbox, doing the busywork",
+    title: "Connect Gmail and let updates track themselves",
+    body: "Hone reads your job-search emails and moves applications to Interviewing, Offer, or Rejected automatically — high-confidence changes apply on their own, everything else surfaces as a one-tap suggestion.",
+    src: "/screenshots/dashboard.png",
+    label: "hone · dashboard",
+    alt: "The Hone dashboard: a daily digest with an updates feed and application trend chart",
   },
   {
     eyebrow: "Your whole pipeline",
