@@ -26,14 +26,14 @@ import {
   isKanbanStatus,
 } from "@/lib/applications/kanban";
 import type { KanbanStatus } from "@/lib/applications/kanban";
-import type { AppWithJob } from "@/app/(app)/applications/page";
+import type { ApplicationRow } from "@/app/(app)/applications/page";
 
 // ── Droppable column sub-component ───────────────────────────────────────────
 
 interface KanbanColumnProps {
   status: KanbanStatus;
   label: string;
-  apps: AppWithJob[];
+  apps: ApplicationRow[];
 }
 
 function KanbanColumn({ status, label, apps }: KanbanColumnProps) {
@@ -82,7 +82,7 @@ function KanbanColumn({ status, label, apps }: KanbanColumnProps) {
 // ── Board component ───────────────────────────────────────────────────────────
 
 interface ApplicationKanbanProps {
-  applications: AppWithJob[];
+  applications: ApplicationRow[];
 }
 
 export function ApplicationKanban({ applications }: ApplicationKanbanProps) {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import type { AppWithJob } from "@/app/(app)/applications/page";
+import type { ApplicationRow } from "@/app/(app)/applications/page";
 import { ApplicationsTable } from "./applications-table";
 
 // Server actions are not callable in jsdom; stub the module.
@@ -12,26 +12,22 @@ vi.mock("@/lib/applications/actions", () => ({
   markAppliedToday: vi.fn(),
 }));
 
-function makeApp(id: string, status: string, company: string): AppWithJob {
+function makeApp(id: string, status: string, company: string): ApplicationRow {
   return {
     id,
     status,
     userId: "u1",
-    jobId: `j-${id}`,
+    title: `Role ${id}`,
+    company,
+    location: null,
+    url: null,
+    salary: null,
+    description: null,
     notes: null,
     appliedAt: null,
     createdAt: new Date("2024-01-01"),
     updatedAt: new Date("2024-01-01"),
-    job: {
-      id: `j-${id}`,
-      title: `Role ${id}`,
-      company,
-      location: null,
-      url: null,
-      salary: null,
-      source: "paste",
-    },
-  } as unknown as AppWithJob;
+  } as unknown as ApplicationRow;
 }
 
 describe("ApplicationsTable", () => {

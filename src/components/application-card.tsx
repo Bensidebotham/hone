@@ -1,7 +1,6 @@
 "use client";
 
 import { useTransition, useState, useEffect } from "react";
-import { Prisma } from "@prisma/client";
 import {
   Card,
   CardContent,
@@ -16,8 +15,7 @@ import { updateStatus, updateNotes } from "@/lib/applications/actions";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
-
-type AppWithJob = Prisma.ApplicationGetPayload<{ include: { job: true } }>;
+import type { ApplicationRow } from "@/app/(app)/applications/page";
 
 const STATUS_OPTIONS = [
   { value: "saved", label: "Saved" },
@@ -29,7 +27,7 @@ const STATUS_OPTIONS = [
 
 type AppStatus = (typeof STATUS_OPTIONS)[number]["value"];
 
-export function ApplicationCard({ app }: { app: AppWithJob }) {
+export function ApplicationCard({ app }: { app: ApplicationRow }) {
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState(app.status);
   const [notesValue, setNotesValue] = useState(app.notes ?? "");
@@ -81,7 +79,7 @@ export function ApplicationCard({ app }: { app: AppWithJob }) {
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between gap-1">
                 <CardTitle className="text-sm font-semibold leading-snug">
-                  {app.job.title}
+                  {app.title}
                 </CardTitle>
                 {/* Drag handle — hidden on narrow screens; listeners isolated here */}
                 <button
@@ -96,8 +94,8 @@ export function ApplicationCard({ app }: { app: AppWithJob }) {
                 </button>
               </div>
               <CardDescription className="text-xs">
-                {app.job.company}
-                {app.job.location ? ` · ${app.job.location}` : ""}
+                {app.company}
+                {app.location ? ` · ${app.location}` : ""}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3 pt-0">
@@ -133,9 +131,9 @@ export function ApplicationCard({ app }: { app: AppWithJob }) {
                   className="text-sm min-h-14 resize-none"
                 />
               </div>
-              {app.job.url && (
+              {app.url && (
                 <a
-                  href={app.job.url}
+                  href={app.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-primary underline-offset-4 hover:underline"

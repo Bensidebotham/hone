@@ -20,7 +20,7 @@ import {
 } from "@/lib/applications/table";
 import { ApplicationContextMenu } from "@/components/application-context-menu";
 import type { KanbanStatus } from "@/lib/applications/kanban";
-import type { AppWithJob } from "@/app/(app)/applications/page";
+import type { ApplicationRow } from "@/app/(app)/applications/page";
 import { cn } from "@/lib/utils";
 import { CompanyLogo } from "@/components/company-logo";
 
@@ -56,13 +56,13 @@ function absolute(date: Date | null): string {
 }
 
 
-export function ApplicationsTable({ applications }: { applications: AppWithJob[] }) {
+export function ApplicationsTable({ applications }: { applications: ApplicationRow[] }) {
   const [apps, setApps] = useState(applications);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<TableFilter>("all");
   const [sort, setSort] = useState<TableSort>("lastActivity");
   const [dir, setDir] = useState<SortDir>("desc");
-  const [detail, setDetail] = useState<AppWithJob | null>(null);
+  const [detail, setDetail] = useState<ApplicationRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -84,7 +84,7 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
     setDir(n.dir);
   }
 
-  function handleStatus(app: AppWithJob, next: KanbanStatus) {
+  function handleStatus(app: ApplicationRow, next: KanbanStatus) {
     if (app.status === next) return;
     const prevStatus = app.status;
     const prevAppliedAt = app.appliedAt;
@@ -114,7 +114,7 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
     });
   }
 
-  function handleMarkApplied(app: AppWithJob) {
+  function handleMarkApplied(app: ApplicationRow) {
     const prevStatus = app.status;
     const prevAppliedAt = app.appliedAt;
     const now = new Date();
@@ -139,7 +139,7 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
     });
   }
 
-  function handleDelete(app: AppWithJob) {
+  function handleDelete(app: ApplicationRow) {
     setApps((prev) => prev.filter((a) => a.id !== app.id));
     // Close the detail drawer if it's showing the row we just removed.
     if (detail?.id === app.id) setDetailOpen(false);
@@ -159,7 +159,7 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
     });
   }
 
-  function openDetail(app: AppWithJob) {
+  function openDetail(app: ApplicationRow) {
     setDetail(app);
     setDetailOpen(true);
   }
@@ -277,10 +277,10 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <CompanyLogo company={app.job.company} size={36} />
+                        <CompanyLogo company={app.company} size={36} />
                         <div>
-                          <div className="font-semibold">{app.job.company}</div>
-                          <div className="text-xs text-muted-foreground">{app.job.title}</div>
+                          <div className="font-semibold">{app.company}</div>
+                          <div className="text-xs text-muted-foreground">{app.title}</div>
                         </div>
                       </div>
                     </td>
@@ -291,7 +291,7 @@ export function ApplicationsTable({ applications }: { applications: AppWithJob[]
                       />
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{absolute(app.appliedAt)}</td>
-                    <td className="px-4 py-3 font-medium">{app.job.salary ?? "—"}</td>
+                    <td className="px-4 py-3 font-medium">{app.salary ?? "—"}</td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{relative(app.updatedAt)}</td>
                   </ApplicationContextMenu>
                 ))}

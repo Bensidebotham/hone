@@ -13,11 +13,11 @@ import {
 } from "@/components/ui/context-menu";
 import { KANBAN_COLUMNS, type KanbanStatus } from "@/lib/applications/kanban";
 import { STATUS_DOT } from "@/components/status-pill";
-import type { AppWithJob } from "@/app/(app)/applications/page";
+import type { ApplicationRow } from "@/app/(app)/applications/page";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  app: AppWithJob;
+  app: ApplicationRow;
   rowClassName: string;
   onOpenDetail: () => void;
   onChangeStatus: (next: KanbanStatus) => void;
@@ -75,9 +75,9 @@ export function ApplicationContextMenu({
           <CalendarCheck className="size-4" /> Mark applied today
         </ContextMenuItem>
 
-        {app.job.url ? (
+        {app.url ? (
           <ContextMenuItem
-            render={<a href={app.job.url} target="_blank" rel="noopener noreferrer" />}
+            render={<a href={app.url} target="_blank" rel="noopener noreferrer" />}
           >
             <ExternalLink className="size-4" /> Open job posting
           </ContextMenuItem>

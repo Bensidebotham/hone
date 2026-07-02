@@ -14,7 +14,7 @@ import {
   deleteApplication,
   updateStatus,
 } from "@/lib/applications/actions";
-import type { AppWithJob } from "@/app/(app)/applications/page";
+import type { ApplicationRow } from "@/app/(app)/applications/page";
 
 function toDateInput(d: Date | null): string {
   if (!d) return "";
@@ -27,7 +27,7 @@ function fmt(d: Date | null): string {
 }
 
 interface DetailProps {
-  app: AppWithJob | null;
+  app: ApplicationRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -48,9 +48,6 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
   }, [app?.id, open]);
 
   if (!app) return null;
-  const isPaste = app.job.source === "paste";
-  const hasHtml = Boolean(app.job.descriptionHtml);
-  const hasText = Boolean(app.job.descriptionText?.trim());
 
   function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -66,6 +63,7 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
           salary: String(fd.get("salary") ?? ""),
           location: String(fd.get("location") ?? ""),
           url: String(fd.get("url") ?? ""),
+          description: String(fd.get("description") ?? ""),
         });
         onOpenChange(false);
       } catch {
@@ -110,10 +108,10 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
         <div className="flex flex-col gap-5 p-6">
           {/* Header */}
           <div className="flex items-start gap-3">
-            <CompanyLogo company={app.job.company} size={44} />
+            <CompanyLogo company={app.company} size={44} />
             <div className="min-w-0 flex-1">
-              <DrawerTitle className="truncate">{app.job.title}</DrawerTitle>
-              <p className="text-sm text-muted-foreground">{app.job.company}</p>
+              <DrawerTitle className="truncate">{app.title}</DrawerTitle>
+              <p className="text-sm text-muted-foreground">{app.company}</p>
             </div>
             <DrawerClose
               render={
@@ -127,12 +125,12 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
           <div className="flex flex-wrap items-center gap-3">
             <StatusPill status={localStatus} onChange={handleStatus} />
             <span className="text-sm text-muted-foreground">
-              {app.job.salary ?? "—"}
-              {app.job.location ? ` · ${app.job.location}` : ""}
+              {app.salary ?? "—"}
+              {app.location ? ` · ${app.location}` : ""}
             </span>
-            {app.job.url && (
+            {app.url && (
               <a
-                href={app.job.url}
+                href={app.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm text-primary underline-offset-4 hover:underline"
@@ -149,20 +147,10 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
             <h3 className="mb-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
               Job summary
             </h3>
-            {hasHtml ? (
-              <div
-                className="prose prose-sm dark:prose-invert max-w-none"
-                // Sanitized at ingest via sanitize-html (allowlisted tags only).
-                dangerouslySetInnerHTML={{ __html: app.job.descriptionHtml! }}
-              />
-            ) : hasText ? (
-              <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                {app.job.descriptionText}
-              </div>
+            {app.description ? (
+              <p className="whitespace-pre-wrap text-sm text-muted-foreground">{app.description}</p>
             ) : (
-              <p className="text-sm italic text-muted-foreground">
-                No description — this role was added manually.
-              </p>
+              <p className="text-sm text-muted-foreground">No description saved.</p>
             )}
           </section>
 
@@ -201,22 +189,20 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
                   <Input name="appliedAt" type="date" defaultValue={toDateInput(app.appliedAt)} />
                 </Field>
                 <Field label="Salary">
-                  <Input name="salary" defaultValue={app.job.salary ?? ""} disabled={!isPaste} />
+                  <Input name="salary" defaultValue={app.salary ?? ""} />
                 </Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Location">
-                  <Input name="location" defaultValue={app.job.location ?? ""} disabled={!isPaste} />
+                  <Input name="location" defaultValue={app.location ?? ""} />
                 </Field>
                 <Field label="Job URL">
-                  <Input name="url" type="url" defaultValue={app.job.url ?? ""} disabled={!isPaste} />
+                  <Input name="url" type="url" defaultValue={app.url ?? ""} />
                 </Field>
               </div>
-              {!isPaste && (
-                <p className="text-xs text-muted-foreground">
-                  This posting came from a job board, so its details are read-only. You can still edit notes and dates.
-                </p>
-              )}
+              <Field label="Description">
+                <Textarea name="description" defaultValue={app.description ?? ""} className="min-h-20" />
+              </Field>
               <Field label="Notes">
                 <Textarea name="notes" defaultValue={app.notes ?? ""} className="min-h-20" />
               </Field>

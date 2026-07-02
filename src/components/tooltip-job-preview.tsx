@@ -1,12 +1,10 @@
 "use client";
 
-import type { Prisma } from "@prisma/client";
+import type { ApplicationRow } from "@/app/(app)/applications/page";
 import { notesSnippet, appliedDateLabel } from "@/lib/applications/format";
 
-type AppWithJob = Prisma.ApplicationGetPayload<{ include: { job: true } }>;
-
 interface TooltipJobPreviewProps {
-  app: AppWithJob;
+  app: ApplicationRow;
 }
 
 export function TooltipJobPreview({ app }: TooltipJobPreviewProps) {
@@ -15,10 +13,10 @@ export function TooltipJobPreview({ app }: TooltipJobPreviewProps) {
 
   return (
     <div className="flex flex-col gap-1 text-left">
-      <p className="font-semibold leading-snug">{app.job.title}</p>
+      <p className="font-semibold leading-snug">{app.title}</p>
       <p className="text-background/70">
-        {app.job.company}
-        {app.job.location ? ` · ${app.job.location}` : ""}
+        {app.company}
+        {app.location ? ` · ${app.location}` : ""}
       </p>
       <p className="text-background/60 text-[11px]">{dateLabel}</p>
       {snippet && (
