@@ -6,7 +6,6 @@
     "dev": "next dev -p 3050",
     "dev:trigger": "pnpm dlx trigger.dev@4 dev",
     "dev:all": "concurrently -k -n next,trigger -c blue.bold,magenta.bold \"pnpm dev\" \"pnpm dev:trigger\"",
-    "poll": "npx tsx --tsconfig tsconfig.json --env-file=.env scripts/run-poll.ts",
     "build": "next build",
     "start": "next start",
     "test": "vitest run",

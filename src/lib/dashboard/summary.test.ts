@@ -9,9 +9,6 @@ vi.mock("@/lib/dashboard/digest-window", () => ({
 vi.mock("@/lib/dashboard/application-trend", () => ({
   getApplicationTrend: vi.fn().mockResolvedValue([{ weekStart: "2026-06-08", count: 2 }]),
 }));
-vi.mock("@/lib/dashboard/new-jobs", () => ({
-  getNewJobsForUser: vi.fn().mockResolvedValue([{ id: "j1" }]),
-}));
 vi.mock("@/lib/health/app-updates", () => ({
   getRecentAppUpdates: vi.fn().mockResolvedValue([{ id: "e1", isNew: true }]),
 }));
@@ -34,7 +31,6 @@ describe("getDashboardSummary", () => {
     expect(summary).toEqual({
       previousVisitAt: new Date("2026-06-09T12:00:00Z"),
       applicationTrend: [{ weekStart: "2026-06-08", count: 2 }],
-      newJobs: [{ id: "j1" }],
       appUpdates: [{ id: "e1", isNew: true }],
       pendingSuggestions: [],
       activityStats: { appliedThisWeek: 3 },
