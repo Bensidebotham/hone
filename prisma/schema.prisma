@@ -16,10 +16,8 @@ model User {
   sessions             Session[]
   profile              Profile?
   resumes              Resume[]
-  jobs                 Job[]
   applications         Application[]
   healthScores         HealthScore[]
-  savedJobs            UserSavedJob[]
   resumeGoals          ResumeGoal[]
   appEvents            ApplicationEvent[]
   gmailConnection      GmailConnection?
@@ -80,7 +78,6 @@ model Resume {
   createdAt   DateTime     @default(now())
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   analyses    Analysis[]
-  matches     Match[]
   resumeGoals ResumeGoal[]
 }
 
@@ -108,66 +105,6 @@ model Analysis {
   error     String?
   createdAt DateTime       @default(now())
   resume    Resume?        @relation(fields: [resumeId], references: [id], onDelete: Cascade)
-}
-
-enum JobSource {
-  ats
-  paste
-  aggregator
-}
-
-model Job {
-  id              String        @id @default(cuid())
-  userId          String?
-  source          JobSource
-  externalId      String?
-  company         String
-  title           String
-  location        String?
-  url             String?
-  salary          String?
-  descriptionText String
-  descriptionHtml String?
-  postedAt        DateTime?
-  createdAt       DateTime      @default(now())
-  // Enrichment (heuristic, populated at ingest)
-  country         String?
-  isRemote        Boolean       @default(false)
-  roleCategory    String?
-  level           String?
-  techTags        String[]
-  salaryMin       Int?
-  salaryMax       Int?
-  // Sourcing metadata
-  employmentType  String?       // "fulltime" | "internship"
-  active          Boolean       @default(true)
-  user            User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  matches         Match[]
-  applications    Application[]
-  savedJobs       UserSavedJob[]
-
-  @@unique([source, externalId])
-  @@index([country])
-  @@index([isRemote])
-  @@index([roleCategory])
-  @@index([level])
-  @@index([salaryMin])
-  @@index([techTags], type: Gin)
-  @@index([employmentType])
-  @@index([active])
-}
-
-model Match {
-  id        String   @id @default(cuid())
-  resumeId  String
-  jobId     String
-  score     Int
-  breakdown Json
-  createdAt DateTime @default(now())
-  resume    Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
-  job       Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  @@unique([resumeId, jobId])
 }
 
 enum AppStatus {
@@ -208,16 +145,20 @@ model ApplicationEvent {
 }
 
 model Application {
-  id        String    @id @default(cuid())
-  userId    String
-  jobId     String
-  status    AppStatus @default(saved)
-  notes     String?
-  appliedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  job       Job                  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  company     String
+  title       String
+  url         String?
+  location    String?
+  salary      String?
+  description String?
+  status      AppStatus @default(saved)
+  notes       String?
+  appliedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   events        ApplicationEvent[]
   emailInsights EmailInsight[]
 }
@@ -231,16 +172,6 @@ model HealthScore {
   composite Int
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model UserSavedJob {
-  userId  String
-  jobId   String
-  savedAt DateTime @default(now())
-  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  job     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
-
-  @@id([userId, jobId])
 }
 
 model ResumeGoal {
