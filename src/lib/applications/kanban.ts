@@ -1,4 +1,4 @@
-import type { AppWithJob } from "@/app/(app)/applications/page";
+import type { ApplicationRow } from "@/app/(app)/applications/page";
 
 export const KANBAN_STATUSES = [
   "saved",
@@ -25,11 +25,11 @@ export function isKanbanStatus(value: string): value is KanbanStatus {
 
 /** Groups an array of applications by status. Every status key is always present. */
 export function groupByStatus(
-  apps: AppWithJob[]
-): Record<KanbanStatus, AppWithJob[]> {
+  apps: ApplicationRow[]
+): Record<KanbanStatus, ApplicationRow[]> {
   const result = Object.fromEntries(
-    KANBAN_STATUSES.map((s) => [s, [] as AppWithJob[]])
-  ) as Record<KanbanStatus, AppWithJob[]>;
+    KANBAN_STATUSES.map((s) => [s, [] as ApplicationRow[]])
+  ) as Record<KanbanStatus, ApplicationRow[]>;
 
   for (const app of apps) {
     if (isKanbanStatus(app.status)) {
@@ -46,13 +46,13 @@ export function groupByStatus(
  * Does NOT mutate the input.
  */
 export function moveApplication(
-  grouped: Record<KanbanStatus, AppWithJob[]>,
+  grouped: Record<KanbanStatus, ApplicationRow[]>,
   appId: string,
   toStatus: KanbanStatus
-): Record<KanbanStatus, AppWithJob[]> {
+): Record<KanbanStatus, ApplicationRow[]> {
   // Find current column
   let fromStatus: KanbanStatus | null = null;
-  let app: AppWithJob | undefined;
+  let app: ApplicationRow | undefined;
 
   for (const status of KANBAN_STATUSES) {
     const found = grouped[status].find((a) => a.id === appId);
@@ -69,7 +69,7 @@ export function moveApplication(
   }
 
   const from: KanbanStatus = fromStatus;
-  const movedApp: AppWithJob = app;
+  const movedApp: ApplicationRow = app;
 
   return {
     ...grouped,

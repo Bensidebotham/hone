@@ -1,4 +1,5 @@
-import type { AppWithJob } from "@/app/(app)/applications/page";
+import type { ApplicationRow } from "@/app/(app)/applications/page";
+import { parseSalaryRange } from "@/lib/applications/salary";
 
 export type TableFilter = "all" | "active" | "saved";
 export type TableSort = "company" | "status" | "applied" | "salary" | "lastActivity";
@@ -44,15 +45,15 @@ const ACTIVE_STATUSES = new Set(["applied", "interviewing", "offer"]);
 
 /** Filter by status chip + free-text search over company and role title. */
 export function filterApplications(
-  apps: AppWithJob[],
+  apps: ApplicationRow[],
   { search, filter }: { search: string; filter: TableFilter }
-): AppWithJob[] {
+): ApplicationRow[] {
   const q = search.trim().toLowerCase();
   return apps.filter((app) => {
     if (filter === "active" && !ACTIVE_STATUSES.has(app.status)) return false;
     if (filter === "saved" && app.status !== "saved") return false;
     if (q) {
-      const hay = `${app.job.company} ${app.job.title}`.toLowerCase();
+      const hay = `${app.company} ${app.title}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -65,25 +66,25 @@ export function filterApplications(
  * regardless of direction — direction orders only the rows that have a value.
  */
 export function sortApplications(
-  apps: AppWithJob[],
+  apps: ApplicationRow[],
   key: TableSort,
   dir: SortDir
-): AppWithJob[] {
+): ApplicationRow[] {
   const flip = dir === "asc" ? 1 : -1;
   const copy = [...apps];
 
   switch (key) {
     case "company":
       return copy.sort((a, b) => {
-        const primary = a.job.company.toLowerCase().localeCompare(b.job.company.toLowerCase());
+        const primary = a.company.toLowerCase().localeCompare(b.company.toLowerCase());
         if (primary !== 0) return flip * primary;
-        return flip * a.job.title.toLowerCase().localeCompare(b.job.title.toLowerCase());
+        return flip * a.title.toLowerCase().localeCompare(b.title.toLowerCase());
       });
     case "status":
       return copy.sort((a, b) => {
         const primary = (STATUS_RANK[a.status] ?? 99) - (STATUS_RANK[b.status] ?? 99);
         if (primary !== 0) return flip * primary;
-        return flip * a.job.company.toLowerCase().localeCompare(b.job.company.toLowerCase());
+        return flip * a.company.toLowerCase().localeCompare(b.company.toLowerCase());
       });
     case "applied":
       return copy.sort((a, b) =>
@@ -91,7 +92,11 @@ export function sortApplications(
       );
     case "salary":
       return copy.sort((a, b) =>
-        nullsLast(a.job.salaryMin ?? null, b.job.salaryMin ?? null, flip)
+        nullsLast(
+          parseSalaryRange(a.salary).salaryMin,
+          parseSalaryRange(b.salary).salaryMin,
+          flip
+        )
       );
     case "lastActivity":
     default:
@@ -107,7 +112,7 @@ export interface ApplicationSummary {
 }
 
 /** Plain factual counts only — deliberately no predicted "response rate". */
-export function summarize(apps: AppWithJob[]): ApplicationSummary {
+export function summarize(apps: ApplicationRow[]): ApplicationSummary {
   let applied = 0;
   let interviewing = 0;
   let offers = 0;

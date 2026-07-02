@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { AppWithJob } from "@/app/(app)/applications/page";
+import type { ApplicationRow } from "@/app/(app)/applications/page";
 import {
   filterApplications,
   sortApplications,
@@ -18,30 +18,25 @@ function makeApp(
     title?: string;
     appliedAt?: Date | null;
     updatedAt?: Date;
-    salaryMin?: number | null;
+    salary?: string | null;
   } = {}
-): AppWithJob {
+): ApplicationRow {
   const updatedAt = opts.updatedAt ?? new Date("2024-01-01");
   return {
     id,
     status,
     userId: "u1",
-    jobId: `j-${id}`,
+    title: opts.title ?? `Job ${id}`,
+    company: opts.company ?? "Acme",
+    location: null,
+    url: null,
+    salary: opts.salary ?? null,
+    description: null,
     notes: null,
     appliedAt: opts.appliedAt ?? null,
     createdAt: new Date("2024-01-01"),
     updatedAt,
-    job: {
-      id: `j-${id}`,
-      title: opts.title ?? `Job ${id}`,
-      company: opts.company ?? "Acme",
-      location: null,
-      url: null,
-      salary: null,
-      salaryMin: opts.salaryMin ?? null,
-      source: "paste",
-    },
-  } as unknown as AppWithJob;
+  } as unknown as ApplicationRow;
 }
 
 describe("filterApplications", () => {
@@ -164,11 +159,11 @@ describe("sortApplications — new keys & direction", () => {
     expect(sortApplications(apps, "applied", "asc").map((a) => a.id)).toEqual(["old", "new", "none"]);
   });
 
-  it("sorts by salary using salaryMin with nulls always last", () => {
+  it("sorts by salary parsed from free-text, with nulls always last", () => {
     const apps = [
-      makeApp("none", "applied", { salaryMin: null }),
-      makeApp("lo", "applied", { salaryMin: 50 }),
-      makeApp("hi", "applied", { salaryMin: 120 }),
+      makeApp("none", "applied", { salary: null }),
+      makeApp("lo", "applied", { salary: "$90k" }),
+      makeApp("hi", "applied", { salary: "$180k" }),
     ];
     expect(sortApplications(apps, "salary", "desc").map((a) => a.id)).toEqual(["hi", "lo", "none"]);
     expect(sortApplications(apps, "salary", "asc").map((a) => a.id)).toEqual(["lo", "hi", "none"]);
