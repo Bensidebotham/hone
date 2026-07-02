@@ -4,7 +4,6 @@ import { stampDashboardVisit } from "@/lib/dashboard/digest-window";
 import { ApplicationTrendChart } from "@/components/dashboard/application-trend-chart";
 import { UpdatesFeed } from "@/components/dashboard/updates-feed";
 import { SuggestedUpdates } from "@/components/dashboard/suggested-updates";
-import { NewJobsRail } from "@/components/dashboard/new-jobs-rail";
 import { InterviewingCard } from "@/components/dashboard/interviewing-card";
 import { ActivityStatsCard } from "@/components/dashboard/activity-stats-card";
 
@@ -38,15 +37,6 @@ export default async function Dashboard() {
         </div>
 
         <div className="space-y-5">
-          <NewJobsRail
-            jobs={summary.newJobs.map((j) => ({
-              id: j.id,
-              title: j.title,
-              company: j.company,
-              location: j.location,
-              url: j.url,
-            }))}
-          />
           <InterviewingCard rows={summary.interviewing} />
         </div>
       </div>
