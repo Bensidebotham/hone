@@ -537,7 +537,7 @@ Change line 59 `{u.job.title} · {u.job.company}` to `{u.title} · {u.company}` 
 - [ ] **Step 6: Full green gate**
 
 Run: `npx tsc --noEmit`
-Expected: The ONLY remaining errors are in files scheduled for deletion in Task 8 (`lib/jobs/*`, `lib/match/*`, `/jobs/page.tsx`, `/api/match/route.ts`, `poll-jobs.ts`, `dashboard/new-jobs.ts`, `health/new-jobs.ts`, `analytics/market.ts`, the `job-*` components) and Task 9 (`analytics/market*`). If any non-doomed file still errors, fix it before proceeding.
+Expected: The ONLY remaining errors are in files scheduled for deletion in Task 8 (`lib/jobs/*`, `lib/match/*`, `/jobs/page.tsx`, `/api/match/route.ts`, `poll-jobs.ts`, `dashboard/new-jobs.ts`, `health/new-jobs.ts`, `analytics/market.ts`, the `job-*` components, and `save-job-button.tsx` — which references the removed `addApplication`) and Task 9 (`analytics/market*`). If any non-doomed file still errors, fix it before proceeding.
 
 Run: `npx vitest run src/lib/dashboard/lists.test.ts src/lib/health/app-updates.test.ts`
 Expected: PASS.
@@ -620,7 +620,8 @@ git rm -r "src/app/(app)/jobs" src/app/api/match src/trigger/poll-jobs.ts \
   src/components/job-detail-pane.test.tsx src/components/job-filter-chips.tsx \
   src/components/job-scope-tabs.tsx src/components/job-search-bar.tsx \
   src/components/job-browser-types.ts src/components/job-browser-types.test.ts \
-  src/components/new-jobs-card.tsx src/components/dashboard/new-jobs-rail.tsx \
+  src/components/new-jobs-card.tsx src/components/save-job-button.tsx \
+  src/components/dashboard/new-jobs-rail.tsx \
   src/components/dashboard/new-jobs-rail.test.tsx \
   scripts/run-poll.ts scripts/backfill-descriptions.ts scripts/backfill-enrichment.ts
 ```
