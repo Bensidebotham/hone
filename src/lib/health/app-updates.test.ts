@@ -7,7 +7,7 @@ const findMany = vi.fn().mockResolvedValue([
     toStatus: "interviewing",
     summary: "Moved to Interviewing",
     createdAt: new Date("2026-06-09T10:00:00Z"),
-    application: { id: "a1", job: { title: "SWE", company: "Acme" } },
+    application: { id: "a1", company: "Acme", title: "SWE" },
   },
   {
     id: "e2",
@@ -15,7 +15,7 @@ const findMany = vi.fn().mockResolvedValue([
     toStatus: "saved",
     summary: "Added to tracker",
     createdAt: new Date("2026-06-09T09:00:00Z"),
-    application: { id: "a2", job: { title: "PM", company: "Beta" } },
+    application: { id: "a2", company: "Beta", title: "PM" },
   },
 ]);
 vi.mock("@/lib/db", () => ({
@@ -34,7 +34,7 @@ describe("getRecentAppUpdates", () => {
     expect(args[0].where.createdAt).toEqual({ gte: windowStart });
     expect(args[0].orderBy).toEqual({ createdAt: "desc" });
     expect(args[0].include).toEqual({
-      application: { include: { job: true } },
+      application: { select: { id: true, company: true, title: true } },
     });
   });
 
@@ -50,7 +50,8 @@ describe("getRecentAppUpdates", () => {
       summary: "Moved to Interviewing",
       createdAt: new Date("2026-06-09T10:00:00Z"),
       isNew: true, // after previousVisitAt
-      job: { title: "SWE", company: "Acme" },
+      title: "SWE",
+      company: "Acme",
     });
     expect(rows[1].isNew).toBe(false); // before previousVisitAt
   });

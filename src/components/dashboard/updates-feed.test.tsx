@@ -10,7 +10,8 @@ const rows = [
     summary: "Moved to Interviewing",
     createdAt: new Date(),
     isNew: true,
-    job: { title: "SWE", company: "Acme" },
+    title: "SWE",
+    company: "Acme",
   },
 ];
 

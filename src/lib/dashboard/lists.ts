@@ -20,14 +20,13 @@ export async function getInterviewing(
 ): Promise<InterviewRow[]> {
   const rows = await prisma.application.findMany({
     where: { userId, status: "interviewing" },
-    include: { job: true },
     orderBy: { updatedAt: "desc" },
     take: limit,
   });
   return rows.map((r) => ({
     id: r.id,
-    jobTitle: r.job.title,
-    company: r.job.company,
+    jobTitle: r.title,
+    company: r.company,
     updatedAt: r.updatedAt,
   }));
 }
@@ -38,14 +37,13 @@ export async function getSavedNotApplied(
 ): Promise<SavedRow[]> {
   const rows = await prisma.application.findMany({
     where: { userId, status: "saved" },
-    include: { job: true },
     orderBy: { updatedAt: "desc" },
     take: limit,
   });
   return rows.map((r) => ({
     id: r.id,
-    jobTitle: r.job.title,
-    company: r.job.company,
-    url: r.job.url,
+    jobTitle: r.title,
+    company: r.company,
+    url: r.url,
   }));
 }

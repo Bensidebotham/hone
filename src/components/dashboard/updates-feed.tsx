@@ -56,7 +56,7 @@ export function UpdatesFeed({ updates }: { updates: AppUpdate[] }) {
                       {u.summary ?? "Updated"}
                     </p>
                     <p className="block truncate text-xs text-muted-foreground">
-                      {u.job.title} · {u.job.company}
+                      {u.title} · {u.company}
                     </p>
                   </div>
                   <div className="flex flex-none items-center gap-2">

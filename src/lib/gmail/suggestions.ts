@@ -14,14 +14,14 @@ export interface PendingSuggestion {
   company: string | null;
   title: string | null;
   createdAt: Date;
-  application: { id: string; job: { title: string; company: string } } | null;
+  application: { id: string; company: string; title: string } | null;
 }
 
 /** Suggested (un-actioned) insights for the dashboard card. */
 export async function getPendingSuggestions(userId: string, limit = 8): Promise<PendingSuggestion[]> {
   const rows = await prisma.emailInsight.findMany({
     where: { userId, outcome: "suggested" },
-    include: { application: { include: { job: true } } },
+    include: { application: { select: { id: true, company: true, title: true } } },
     orderBy: { createdAt: "desc" },
     take: limit,
   });
@@ -29,11 +29,11 @@ export async function getPendingSuggestions(userId: string, limit = 8): Promise<
     id: r.id,
     kind: r.kind,
     suggestedStatus: r.suggestedStatus,
-    company: r.company ?? r.application?.job.company ?? null,
-    title: r.title ?? r.application?.job.title ?? null,
+    company: r.company ?? r.application?.company ?? null,
+    title: r.title ?? r.application?.title ?? null,
     createdAt: r.createdAt,
     application: r.application
-      ? { id: r.application.id, job: { title: r.application.job.title, company: r.application.job.company } }
+      ? { id: r.application.id, company: r.application.company, title: r.application.title }
       : null,
   }));
 }

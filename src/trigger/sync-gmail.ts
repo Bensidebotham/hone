@@ -55,10 +55,10 @@ export const syncGmail = schedules.task({
         // Candidate applications for matching (this user's tracked apps).
         const apps = await prisma.application.findMany({
           where: { userId: conn.userId },
-          include: { job: { select: { company: true } } },
+          select: { id: true, company: true, status: true },
         });
         const candidates: AppCandidate[] = apps.map((a) => ({
-          applicationId: a.id, company: a.job.company, status: a.status,
+          applicationId: a.id, company: a.company, status: a.status,
         }));
 
         // If any message fails to fetch/process, hold the cursor so it retries

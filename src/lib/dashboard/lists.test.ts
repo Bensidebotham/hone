@@ -10,7 +10,9 @@ import { getInterviewing, getSavedNotApplied } from "@/lib/dashboard/lists";
 const row = (id: string, title: string, company: string, url: string | null = null) => ({
   id,
   updatedAt: new Date("2026-06-09T10:00:00Z"),
-  job: { title, company, url, descriptionText: "x" },
+  title,
+  company,
+  url,
 });
 
 beforeEach(() => {
@@ -23,7 +25,7 @@ describe("getInterviewing", () => {
     await getInterviewing("u1");
     const args = findMany.mock.calls[0][0];
     expect(args.where).toEqual({ userId: "u1", status: "interviewing" });
-    expect(args.include).toEqual({ job: true });
+    expect(args.include).toBeUndefined();
     expect(args.orderBy).toEqual({ updatedAt: "desc" });
     expect(args.take).toBe(8);
   });
@@ -46,7 +48,7 @@ describe("getSavedNotApplied", () => {
     await getSavedNotApplied("u1");
     const args = findMany.mock.calls[0][0];
     expect(args.where).toEqual({ userId: "u1", status: "saved" });
-    expect(args.include).toEqual({ job: true });
+    expect(args.include).toBeUndefined();
     expect(args.orderBy).toEqual({ updatedAt: "desc" });
     expect(args.take).toBe(8);
   });

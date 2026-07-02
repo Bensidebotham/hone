@@ -8,7 +8,8 @@ export type AppUpdate = {
   summary: string | null;
   createdAt: Date;
   isNew: boolean;
-  job: { title: string; company: string };
+  title: string;
+  company: string;
 };
 
 /**
@@ -24,7 +25,7 @@ export async function getRecentAppUpdates(
 ): Promise<AppUpdate[]> {
   const rows = await prisma.applicationEvent.findMany({
     where: { userId, createdAt: { gte: windowStart } },
-    include: { application: { include: { job: true } } },
+    include: { application: { select: { id: true, company: true, title: true } } },
     orderBy: { createdAt: "desc" },
     take: limit,
   });
@@ -36,6 +37,7 @@ export async function getRecentAppUpdates(
     summary: row.summary,
     createdAt: row.createdAt,
     isNew: previousVisitAt ? row.createdAt > previousVisitAt : true,
-    job: { title: row.application.job.title, company: row.application.job.company },
+    title: row.application.title,
+    company: row.application.company,
   }));
 }
