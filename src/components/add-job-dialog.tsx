@@ -44,6 +44,7 @@ export function AddJobDialog({ trigger }: { trigger?: React.ReactElement }) {
           location: String(fd.get("location") ?? ""),
           appliedAt: appliedAtRaw ? new Date(appliedAtRaw) : null,
           notes: String(fd.get("notes") ?? ""),
+          description: String(fd.get("description") ?? ""),
         });
         setOpen(false);
       } catch (err) {
@@ -115,6 +116,13 @@ export function AddJobDialog({ trigger }: { trigger?: React.ReactElement }) {
           </Field>
           <Field label="Notes">
             <Textarea name="notes" placeholder="Anything worth remembering…" className="min-h-16" />
+          </Field>
+          <Field label="Job description">
+            <Textarea
+              name="description"
+              placeholder="Paste the job posting — used later to tailor your resume."
+              className="min-h-24"
+            />
           </Field>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
