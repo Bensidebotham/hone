@@ -23,7 +23,7 @@ export interface TablePrefs {
 
 export const CATALOG: ColumnDef[] = [
   { id: "company", label: "Company", kind: "company", field: "company", editable: true, sortable: true },
-  { id: "role", label: "Role", kind: "role", field: "title", editable: true, sortable: true },
+  { id: "role", label: "Role", kind: "role", field: "title", editable: true, sortable: false },
   { id: "status", label: "Status", kind: "status", field: "status", editable: true, sortable: true },
   { id: "appliedAt", label: "Applied", kind: "date", field: "appliedAt", editable: true, sortable: true },
   { id: "followUpDate", label: "Follow-up", kind: "date", field: "followUpDate", editable: true, sortable: true },
@@ -31,8 +31,8 @@ export const CATALOG: ColumnDef[] = [
   { id: "source", label: "Source", kind: "text", field: "source", editable: true, sortable: true },
   { id: "contact", label: "Contact", kind: "text", field: "contact", editable: true, sortable: true },
   { id: "nextStep", label: "Next step", kind: "text", field: "nextStep", editable: true, sortable: true },
-  { id: "location", label: "Location", kind: "text", field: "location", editable: true, sortable: true },
-  { id: "url", label: "URL", kind: "text", field: "url", editable: true, sortable: true },
+  { id: "location", label: "Location", kind: "text", field: "location", editable: true, sortable: false },
+  { id: "url", label: "URL", kind: "text", field: "url", editable: true, sortable: false },
   { id: "notes", label: "Notes", kind: "text", field: "notes", editable: true, sortable: false },
   { id: "lastActivity", label: "Last activity", kind: "lastActivity", editable: false, sortable: true },
 ];

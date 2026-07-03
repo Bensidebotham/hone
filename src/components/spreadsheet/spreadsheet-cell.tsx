@@ -31,7 +31,9 @@ function relative(date: Date): string {
 }
 
 function toDateInput(d: Date | null): string {
-  return d ? new Date(d).toISOString().slice(0, 10) : "";
+  if (!d) return "";
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
 }
 function fmtDate(d: Date | null): string {
   return d ? new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—";
@@ -79,6 +81,7 @@ export function SpreadsheetCell(props: SpreadsheetCellProps) {
         <CellInput
           kind={column.kind}
           initial={props.seed ?? rawValue(app, column)}
+          seeded={props.seed !== undefined}
           onCommit={props.onCommit}
           onCancel={props.onCancel}
         />
@@ -119,20 +122,35 @@ export function SpreadsheetCell(props: SpreadsheetCellProps) {
 }
 
 function CellInput({
-  kind, initial, onCommit, onCancel,
-}: { kind: ColumnDef["kind"]; initial: string; onCommit: (v: string) => void; onCancel: () => void }) {
+  kind, initial, seeded, onCommit, onCancel,
+}: { kind: ColumnDef["kind"]; initial: string; seeded: boolean; onCommit: (v: string) => void; onCancel: () => void }) {
   const [value, setValue] = useState(initial);
   const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
+  const committedRef = useRef(false);
+  useEffect(() => {
+    ref.current?.focus();
+    if (seeded) {
+      const n = ref.current?.value.length ?? 0;
+      ref.current?.setSelectionRange(n, n);
+    } else {
+      ref.current?.select();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  function commit(v: string) {
+    if (committedRef.current) return;
+    committedRef.current = true;
+    onCommit(v);
+  }
   return (
     <input
       ref={ref}
       type={kind === "date" ? "date" : "text"}
       value={value}
       onChange={(e) => setValue(e.target.value)}
-      onBlur={() => onCommit(value)}
+      onBlur={() => commit(value)}
       onKeyDown={(e) => {
-        if (e.key === "Enter") { e.preventDefault(); onCommit(value); }
+        if (e.key === "Enter") { e.preventDefault(); commit(value); }
         else if (e.key === "Escape") { e.preventDefault(); onCancel(); }
       }}
       className="h-7 w-full rounded border border-input bg-background px-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"

@@ -37,7 +37,8 @@ const SORT_KEY: Partial<Record<ColumnId, TableSort>> = {
 
 function parseDate(iso: string): Date | null {
   if (!iso.trim()) return null;
-  const d = new Date(iso);
+  const [y, m, dd] = iso.split("-").map(Number);
+  const d = new Date(y, m - 1, dd);
   return isNaN(d.getTime()) ? null : d;
 }
 
@@ -67,6 +68,17 @@ export function ApplicationSpreadsheet({
   );
   const summary = useMemo(() => summarize(apps), [apps]);
   const rowIds = useMemo(() => rows.map((r) => r.id), [rows]);
+
+  // Prune selection when the visible rows change (e.g. search/filter) so bulk
+  // actions never operate on rows the user can no longer see.
+  useEffect(() => {
+    setSelection((prev) => {
+      if (prev.size === 0) return prev;
+      const visible = new Set(rowIds);
+      const next = new Set([...prev].filter((id) => visible.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [rowIds]);
 
   // ---- optimistic field commit ----
   function runOptimistic(appId: string, patch: Partial<ApplicationRow>, action: () => Promise<void>, revert: Partial<ApplicationRow>) {
@@ -258,8 +270,11 @@ export function ApplicationSpreadsheet({
                   </th>
                   {columns.map((col) => {
                     const key = SORT_KEY[col.id];
+                    const sortState = col.sortable && key
+                      ? (sort === key ? (dir === "asc" ? "ascending" : "descending") : "none")
+                      : undefined;
                     return (
-                      <th key={col.id} className="px-3 py-3">
+                      <th key={col.id} className="px-3 py-3" aria-sort={sortState}>
                         {col.sortable && key ? (
                           <button type="button" onClick={() => { const n = nextSort(sort, dir, key); setSort(n.key); setDir(n.dir); }}
                             className="uppercase tracking-wide hover:text-foreground">

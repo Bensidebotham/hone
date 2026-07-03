@@ -34,6 +34,40 @@ it("commits an inline salary edit via updateApplicationFields", () => {
   expect(actions.updateApplicationFields).toHaveBeenCalledWith("a1", { salary: "$200k" });
 });
 
+it("preserves the seed character when typing to start an edit (does not clobber it)", () => {
+  render(<ApplicationSpreadsheet applications={[mk({})]} prefs={null} />);
+  // Activate the salary cell (a text/editable cell), then type a printable
+  // character on the grid to trigger type-to-edit.
+  fireEvent.click(screen.getByText("$180k"));
+  const table = screen.getByText("$180k").closest("table")!;
+  fireEvent.keyDown(table, { key: "X" });
+  const input = screen.getByRole("textbox", { name: "" }) as HTMLInputElement;
+
+  // The seeded value must NOT be select-all'd on mount — the caret should sit
+  // at the end so the next keystroke appends instead of replacing everything.
+  expect(input.value).toBe("X");
+  expect(input.selectionStart).toBe(input.value.length);
+  expect(input.selectionEnd).toBe(input.value.length);
+
+  // Simulate real typing at the current caret/selection (fireEvent.change
+  // alone doesn't respect selection ranges the way a browser keystroke does).
+  function typeChar(char: string) {
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    const next = input.value.slice(0, start) + char + input.value.slice(end);
+    fireEvent.change(input, { target: { value: next } });
+    const pos = start + char.length;
+    input.setSelectionRange(pos, pos);
+  }
+  typeChar("Y");
+  typeChar("Z");
+  fireEvent.keyDown(input, { key: "Enter" });
+
+  const [, patch] = actions.updateApplicationFields.mock.calls[0];
+  expect((patch as { salary: string }).salary.startsWith("X")).toBe(true);
+  expect((patch as { salary: string }).salary).toBe("XYZ");
+});
+
 it("shift-click selects a range and bulk-deletes them", () => {
   const rows = [mk({ id: "a1", company: "A" }), mk({ id: "a2", company: "B" }), mk({ id: "a3", company: "C" })];
   render(<ApplicationSpreadsheet applications={rows} prefs={null} />);
