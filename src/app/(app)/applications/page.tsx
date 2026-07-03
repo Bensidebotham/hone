@@ -1,9 +1,10 @@
 import type { Application } from "@prisma/client";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { ApplicationsTable } from "@/components/applications-table";
+import { ApplicationSpreadsheet } from "@/components/spreadsheet/application-spreadsheet";
 import { AddJobDialog } from "@/components/add-job-dialog";
 import { isKanbanStatus } from "@/lib/applications/kanban";
+import type { TablePrefs } from "@/lib/applications/columns";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +19,14 @@ export default async function ApplicationsPage({
   const { status } = await searchParams;
   const statusFilter = status && isKanbanStatus(status) ? status : undefined;
 
-  const apps = await prisma.application.findMany({
-    where: { userId: user.id, ...(statusFilter ? { status: statusFilter } : {}) },
-    orderBy: { updatedAt: "desc" },
-  });
+  const [apps, dbUser] = await Promise.all([
+    prisma.application.findMany({
+      where: { userId: user.id, ...(statusFilter ? { status: statusFilter } : {}) },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.user.findUnique({ where: { id: user.id }, select: { applicationTablePrefs: true } }),
+  ]);
+  const prefs = (dbUser?.applicationTablePrefs ?? null) as TablePrefs | null;
 
   return (
     <div>
@@ -35,7 +40,7 @@ export default async function ApplicationsPage({
         </div>
         <AddJobDialog />
       </div>
-      <ApplicationsTable applications={apps} />
+      <ApplicationSpreadsheet applications={apps} prefs={prefs} />
     </div>
   );
 }
