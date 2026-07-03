@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within } from "@testing-library/react";
+import { it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { ApplicationSpreadsheet } from "./application-spreadsheet";
 import type { ApplicationRow } from "@/app/(app)/applications/page";
 
@@ -43,4 +43,15 @@ it("shift-click selects a range and bulk-deletes them", () => {
   expect(screen.getByText("3 selected")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /Delete/ }));
   expect(actions.bulkDelete).toHaveBeenCalledWith(["a1", "a2", "a3"]);
+});
+
+it("does not hijack keyboard input in the search box after a grid cell is active", () => {
+  render(<ApplicationSpreadsheet applications={[mk({})]} prefs={null} />);
+  // Activate a grid cell — this used to make the outer container's keydown
+  // handler intercept and preventDefault every subsequent key, even ones
+  // typed into the toolbar's search input.
+  fireEvent.click(screen.getByText("Stripe"));
+  const searchInput = screen.getByLabelText("Search applications");
+  // fireEvent returns false only when preventDefault() was called on the event.
+  expect(fireEvent.keyDown(searchInput, { key: "ArrowRight" })).toBe(true);
 });

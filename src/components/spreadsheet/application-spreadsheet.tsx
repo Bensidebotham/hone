@@ -18,7 +18,7 @@ import { resolveColumns, type ColumnDef, type ColumnId, type TablePrefs } from "
 import { reduceGrid, INITIAL_GRID } from "@/lib/applications/grid-nav";
 import { rangeIds } from "@/lib/applications/selection";
 import {
-  updateStatus, markAppliedToday, updateApplicationFields,
+  updateStatus, updateApplicationFields,
   bulkUpdateStatus, bulkMarkApplied, bulkDelete, saveColumnPrefs,
 } from "@/lib/applications/actions";
 import type { KanbanStatus } from "@/lib/applications/kanban";
@@ -89,12 +89,13 @@ export function ApplicationSpreadsheet({
         () => updateApplicationFields(app.id, { [field]: parsed } as never),
         { [field]: prev } as Partial<ApplicationRow>);
     } else {
-      const next = value.trim() || null;
+      const trimmed = value.trim();
+      const next = trimmed || null;
       const prev = app[field] as string | null;
       // company/title must not be blanked
       if ((field === "company" || field === "title") && !next) return;
       runOptimistic(app.id, { [field]: next } as Partial<ApplicationRow>,
-        () => updateApplicationFields(app.id, { [field]: value } as never),
+        () => updateApplicationFields(app.id, { [field]: trimmed } as never),
         { [field]: prev } as Partial<ApplicationRow>);
     }
   }
@@ -129,24 +130,43 @@ export function ApplicationSpreadsheet({
   function clearSelection() { setSelection(new Set()); }
 
   // ---- bulk ----
-  function bulk(action: (ids: string[]) => Promise<void>, optimistic?: (id: string) => Partial<ApplicationRow>) {
+  // `mutate` transforms the current rows into the optimistic next state (patch fields
+  // or filter out deleted rows). On failure we restore every affected row to its
+  // pre-mutation snapshot, re-inserting any that were optimistically removed.
+  function bulk(mutate: (prev: ApplicationRow[]) => ApplicationRow[], action: (ids: string[]) => Promise<void>) {
     const ids = [...selection];
     if (ids.length === 0) return;
-    if (optimistic) setApps((prev) => prev.map((a) => (selection.has(a.id) ? { ...a, ...optimistic(a.id) } : a)));
+    const prevById = new Map(apps.filter((a) => selection.has(a.id)).map((a) => [a.id, a]));
+    setApps(mutate);
     setError(null);
     pendingRef.current++;
-    action(ids).catch(() => setError("Bulk action failed. Refresh to re-sync.")).finally(() => { pendingRef.current--; });
+    action(ids).catch(() => {
+      setApps((current) => {
+        const currentIds = new Set(current.map((a) => a.id));
+        const restored = current.map((a) => (prevById.has(a.id) ? prevById.get(a.id)! : a));
+        const reinserted = ids.filter((id) => !currentIds.has(id) && prevById.has(id)).map((id) => prevById.get(id)!);
+        return [...restored, ...reinserted];
+      });
+      setError("Bulk action failed. Refresh to re-sync.");
+    }).finally(() => { pendingRef.current--; });
     clearSelection();
   }
 
   // ---- columns ----
   function applyColumns(next: { order: ColumnId[]; hidden: ColumnId[] }) {
+    const prevColumns = columns;
     setColumns(resolveColumns(next));
-    saveColumnPrefs(next).catch(() => setError("Could not save column layout."));
+    saveColumnPrefs(next).catch(() => {
+      setColumns(prevColumns);
+      setError("Could not save column layout.");
+    });
   }
 
   // ---- keyboard ----
   function onGridKeyDown(e: React.KeyboardEvent) {
+    // Grid navigation only applies to keys originating inside the grid table —
+    // e.g. the toolbar's search input must retain normal typing/cursor behavior.
+    if (!(e.target as HTMLElement).closest("table")) return;
     const cols = columns.length;
     const rowsN = rows.length;
     if (!grid.active) return;
@@ -208,9 +228,18 @@ export function ApplicationSpreadsheet({
         {selection.size > 0 && (
           <BulkActionBar
             count={selection.size}
-            onSetStatus={(s) => bulk((ids) => bulkUpdateStatus(ids, s), () => ({ status: s }))}
-            onMarkApplied={() => bulk((ids) => bulkMarkApplied(ids), () => ({ status: "applied", appliedAt: new Date() }))}
-            onDelete={() => { const ids = new Set(selection); setApps((prev) => prev.filter((a) => !ids.has(a.id))); bulk((i) => bulkDelete(i)); }}
+            onSetStatus={(s) => bulk(
+              (prev) => prev.map((a) => (selection.has(a.id) ? { ...a, status: s } : a)),
+              (ids) => bulkUpdateStatus(ids, s)
+            )}
+            onMarkApplied={() => bulk(
+              (prev) => prev.map((a) => (selection.has(a.id) ? { ...a, status: "applied", appliedAt: new Date() } : a)),
+              (ids) => bulkMarkApplied(ids)
+            )}
+            onDelete={() => bulk(
+              (prev) => prev.filter((a) => !selection.has(a.id)),
+              (ids) => bulkDelete(ids)
+            )}
             onClear={clearSelection}
           />
         )}
