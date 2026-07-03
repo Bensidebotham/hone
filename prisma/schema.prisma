@@ -23,6 +23,7 @@ model User {
   gmailConnection      GmailConnection?
   emailInsights        EmailInsight[]
   lastDashboardVisitAt DateTime?
+  applicationTablePrefs Json?
   createdAt            DateTime          @default(now())
 }
 
@@ -152,6 +153,10 @@ model Application {
   url         String?
   location    String?
   salary      String?
+  followUpDate DateTime?
+  source       String?
+  contact      String?
+  nextStep     String?
   description String?
   status      AppStatus @default(saved)
   notes       String?
