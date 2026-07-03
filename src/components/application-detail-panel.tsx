@@ -10,7 +10,7 @@ import { CompanyLogo } from "@/components/company-logo";
 import { StatusPill } from "@/components/status-pill";
 import { KanbanStatus } from "@/lib/applications/kanban";
 import {
-  updateApplicationDetails,
+  updateApplicationFields,
   deleteApplication,
   updateStatus,
 } from "@/lib/applications/actions";
@@ -57,7 +57,7 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
     setPendingAction("save");
     startTransition(async () => {
       try {
-        await updateApplicationDetails(app!.id, {
+        await updateApplicationFields(app!.id, {
           notes: String(fd.get("notes") ?? ""),
           appliedAt: appliedAtRaw ? new Date(appliedAtRaw) : null,
           salary: String(fd.get("salary") ?? ""),

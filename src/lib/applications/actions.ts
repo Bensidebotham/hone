@@ -104,20 +104,27 @@ export async function createManualApplication(input: ManualApplicationInput) {
   revalidatePath("/applications");
 }
 
-export interface ApplicationDetailInput {
-  notes?: string;
-  appliedAt?: Date | null;
+export interface ApplicationFieldsInput {
+  company?: string;
+  title?: string;
   salary?: string;
   location?: string;
   url?: string;
+  source?: string;
+  contact?: string;
+  nextStep?: string;
+  notes?: string;
   description?: string;
+  appliedAt?: Date | null;
+  followUpDate?: Date | null;
 }
 
-/** Update an application's own fields. All fields live on Application now. */
-export async function updateApplicationDetails(
-  applicationId: string,
-  input: ApplicationDetailInput
-) {
+const trimOrNull = (v?: string) => (v === undefined ? undefined : v.trim() || null);
+// Required fields: never blank them via inline edit — skip an empty value.
+const keepIfNonEmpty = (v?: string) => (v === undefined ? undefined : v.trim() || undefined);
+
+/** Partial update of an application's own scalar fields. Omitted fields are untouched. */
+export async function updateApplicationFields(applicationId: string, input: ApplicationFieldsInput) {
   const user = await requireUser();
   const app = await prisma.application.findFirst({
     where: { id: applicationId, userId: user.id },
@@ -128,15 +135,85 @@ export async function updateApplicationDetails(
   await prisma.application.update({
     where: { id: app.id },
     data: {
-      notes: input.notes ?? undefined,
+      company: keepIfNonEmpty(input.company),
+      title: keepIfNonEmpty(input.title),
+      salary: trimOrNull(input.salary),
+      location: trimOrNull(input.location),
+      url: trimOrNull(input.url),
+      source: trimOrNull(input.source),
+      contact: trimOrNull(input.contact),
+      nextStep: trimOrNull(input.nextStep),
+      notes: trimOrNull(input.notes),
+      description: trimOrNull(input.description),
       appliedAt: input.appliedAt === undefined ? undefined : input.appliedAt,
-      salary: input.salary !== undefined ? input.salary.trim() || null : undefined,
-      location: input.location !== undefined ? input.location.trim() || null : undefined,
-      url: input.url !== undefined ? input.url.trim() || null : undefined,
-      description: input.description !== undefined ? input.description.trim() || null : undefined,
+      followUpDate: input.followUpDate === undefined ? undefined : input.followUpDate,
     },
   });
 
+  revalidatePath("/applications");
+}
+
+/** Bulk status change; records an event per changed application. */
+export async function bulkUpdateStatus(ids: string[], status: Status) {
+  if (ids.length === 0) return;
+  const user = await requireUser();
+  const apps = await prisma.application.findMany({
+    where: { id: { in: ids }, userId: user.id },
+    select: { id: true, status: true },
+  });
+  for (const app of apps) {
+    if (app.status === status) continue;
+    await prisma.application.update({
+      where: { id: app.id },
+      data: { status, appliedAt: status === "applied" ? new Date() : undefined },
+    });
+    await recordApplicationEvent({
+      applicationId: app.id, userId: user.id, type: "status_change",
+      fromStatus: app.status, toStatus: status,
+    });
+  }
+  revalidatePath("/applications");
+}
+
+/** Bulk mark-applied; stamps the date and records events. */
+export async function bulkMarkApplied(ids: string[]) {
+  if (ids.length === 0) return;
+  const user = await requireUser();
+  const apps = await prisma.application.findMany({
+    where: { id: { in: ids }, userId: user.id },
+    select: { id: true, status: true },
+  });
+  const now = new Date();
+  for (const app of apps) {
+    await prisma.application.update({
+      where: { id: app.id },
+      data: { status: "applied", appliedAt: now },
+    });
+    if (app.status !== "applied") {
+      await recordApplicationEvent({
+        applicationId: app.id, userId: user.id, type: "status_change",
+        fromStatus: app.status, toStatus: "applied",
+      });
+    }
+  }
+  revalidatePath("/applications");
+}
+
+/** Bulk delete, scoped to the user. */
+export async function bulkDelete(ids: string[]) {
+  if (ids.length === 0) return;
+  const user = await requireUser();
+  await prisma.application.deleteMany({ where: { id: { in: ids }, userId: user.id } });
+  revalidatePath("/applications");
+}
+
+/** Persist the user's column visibility/order preferences. */
+export async function saveColumnPrefs(prefs: { order?: string[]; hidden?: string[] }) {
+  const user = await requireUser();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { applicationTablePrefs: prefs },
+  });
   revalidatePath("/applications");
 }
 

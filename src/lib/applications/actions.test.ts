@@ -6,8 +6,10 @@ const appCreate = vi.fn().mockResolvedValue({ id: "app1" });
 const appUpdateMany = vi.fn().mockResolvedValue({ count: 1 });
 const appUpdate = vi.fn().mockResolvedValue({ id: "app1" });
 const appFindFirst = vi.fn().mockResolvedValue({ status: "saved" });
+const appFindMany = vi.fn().mockResolvedValue([]);
 const appDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
 const appEventCreate = vi.fn().mockResolvedValue({});
+const userUpdate = vi.fn().mockResolvedValue({ id: "u1" });
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -16,10 +18,14 @@ vi.mock("@/lib/db", () => ({
       updateMany: (...a: any) => appUpdateMany(...a),
       update: (...a: any) => appUpdate(...a),
       findFirst: (...a: any) => appFindFirst(...a),
+      findMany: (...a: any) => appFindMany(...a),
       deleteMany: (...a: any) => appDeleteMany(...a),
     },
     applicationEvent: {
       create: (...a: any) => appEventCreate(...a),
+    },
+    user: {
+      update: (...a: any) => userUpdate(...a),
     },
   },
 }));
@@ -28,17 +34,26 @@ import {
   updateStatus,
   markAppliedToday,
   createManualApplication,
-  updateApplicationDetails,
+  updateApplicationFields,
   deleteApplication,
+  bulkUpdateStatus,
+  bulkMarkApplied,
+  bulkDelete,
+  saveColumnPrefs,
 } from "@/lib/applications/actions";
+
+// Alias to match the brief's naming for event assertions.
+const recordEvent = appEventCreate;
 
 beforeEach(() => {
   appCreate.mockClear();
   appUpdateMany.mockClear();
   appUpdate.mockClear();
   appFindFirst.mockReset().mockResolvedValue({ status: "saved" });
+  appFindMany.mockReset().mockResolvedValue([]);
   appDeleteMany.mockClear();
   appEventCreate.mockClear();
+  userUpdate.mockClear();
 });
 
 describe("updateStatus (unchanged)", () => {
@@ -101,10 +116,29 @@ describe("createManualApplication", () => {
   });
 });
 
-describe("updateApplicationDetails", () => {
+describe("updateApplicationFields", () => {
+  it("writes only provided fields, trimming empties to null", async () => {
+    appFindFirst.mockResolvedValue({ id: "a1" });
+    await updateApplicationFields("a1", { salary: " $180k ", source: "", followUpDate: null });
+    expect(appUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "a1" },
+        data: expect.objectContaining({ salary: "$180k", source: null, followUpDate: null }),
+      })
+    );
+    const data = appUpdate.mock.calls[0][0].data;
+    expect(data.location).toBeUndefined(); // omitted field not touched
+  });
+
+  it("does not blank a required company/title when passed empty", async () => {
+    appFindFirst.mockResolvedValue({ id: "a1" });
+    await updateApplicationFields("a1", { company: "   " });
+    expect(appUpdate.mock.calls[0][0].data.company).toBeUndefined();
+  });
+
   it("writes the provided flat fields onto the application", async () => {
     appFindFirst.mockResolvedValue({ id: "app1", userId: "u1" });
-    await updateApplicationDetails("app1", {
+    await updateApplicationFields("app1", {
       notes: "n",
       appliedAt: new Date("2024-06-01"),
       salary: "$200k",
@@ -129,13 +163,13 @@ describe("updateApplicationDetails", () => {
 
   it("is a no-op when the application is not owned by the user", async () => {
     appFindFirst.mockResolvedValue(null);
-    await updateApplicationDetails("nope", { notes: "n" });
+    await updateApplicationFields("nope", { notes: "n" });
     expect(appUpdate).not.toHaveBeenCalled();
   });
 
   it("does not wipe fields that were omitted from a partial update", async () => {
     appFindFirst.mockResolvedValue({ id: "app1", userId: "u1" });
-    await updateApplicationDetails("app1", { notes: "just notes" });
+    await updateApplicationFields("app1", { notes: "just notes" });
     const data = appUpdate.mock.calls[0][0].data;
     expect(data.salary).toBeUndefined();
     expect(data.location).toBeUndefined();
@@ -145,12 +179,91 @@ describe("updateApplicationDetails", () => {
 
   it("clears appliedAt when explicitly passed null", async () => {
     appFindFirst.mockResolvedValue({ id: "app1", userId: "u1" });
-    await updateApplicationDetails("app1", { appliedAt: null });
+    await updateApplicationFields("app1", { appliedAt: null });
     expect(appUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ appliedAt: null }),
       })
     );
+  });
+});
+
+describe("bulkUpdateStatus", () => {
+  it("records an event per changed app and skips no-ops", async () => {
+    appFindMany.mockResolvedValue([
+      { id: "a1", status: "saved" },
+      { id: "a2", status: "applied" },
+    ]);
+    await bulkUpdateStatus(["a1", "a2"], "applied");
+    expect(appUpdate).toHaveBeenCalledTimes(1); // a2 already applied → skipped
+    expect(recordEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it("scopes the lookup to the user and given ids", async () => {
+    appFindMany.mockResolvedValue([]);
+    await bulkUpdateStatus(["a1", "a2"], "applied");
+    expect(appFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ["a1", "a2"] }, userId: "u1" },
+      })
+    );
+  });
+
+  it("is a no-op for an empty id list", async () => {
+    await bulkUpdateStatus([], "applied");
+    expect(appFindMany).not.toHaveBeenCalled();
+    expect(appUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("bulkMarkApplied", () => {
+  it("stamps appliedAt for every app and records events only for newly-applied ones", async () => {
+    appFindMany.mockResolvedValue([
+      { id: "a1", status: "saved" },
+      { id: "a2", status: "applied" },
+    ]);
+    await bulkMarkApplied(["a1", "a2"]);
+    expect(appUpdate).toHaveBeenCalledTimes(2);
+    expect(appUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "a1" },
+        data: expect.objectContaining({ status: "applied", appliedAt: expect.any(Date) }),
+      })
+    );
+    expect(recordEvent).toHaveBeenCalledTimes(1);
+    expect(recordEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ applicationId: "a1", toStatus: "applied" }),
+      })
+    );
+  });
+
+  it("is a no-op for an empty id list", async () => {
+    await bulkMarkApplied([]);
+    expect(appFindMany).not.toHaveBeenCalled();
+    expect(appUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("bulkDelete", () => {
+  it("scopes to the user", async () => {
+    await bulkDelete(["a1", "a2"]);
+    expect(appDeleteMany).toHaveBeenCalledWith({ where: { id: { in: ["a1", "a2"] }, userId: "u1" } });
+  });
+
+  it("is a no-op for an empty id list", async () => {
+    await bulkDelete([]);
+    expect(appDeleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveColumnPrefs", () => {
+  it("writes the blob", async () => {
+    await saveColumnPrefs({ order: ["company"], hidden: ["notes"] });
+    expect(userUpdate).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { applicationTablePrefs: { order: ["company"], hidden: ["notes"] } },
+    });
   });
 });
 
