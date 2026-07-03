@@ -180,3 +180,26 @@ describe("nextSort", () => {
     expect(nextSort("applied", "asc", "salary")).toEqual({ key: "salary", dir: DEFAULT_DIR.salary });
   });
 });
+
+describe("sortApplications — new columns", () => {
+  const base = (over: Partial<ApplicationRow>): ApplicationRow => ({
+    id: "x", userId: "u", company: "C", title: "T", url: null, location: null,
+    salary: null, description: null, status: "applied", notes: null,
+    appliedAt: null, followUpDate: null, source: null, contact: null, nextStep: null,
+    createdAt: new Date(0), updatedAt: new Date(0), ...over,
+  } as ApplicationRow);
+
+  it("sorts followUpDate ascending with nulls last", () => {
+    const rows = [
+      base({ id: "none", followUpDate: null }),
+      base({ id: "late", followUpDate: new Date("2026-08-01") }),
+      base({ id: "soon", followUpDate: new Date("2026-07-10") }),
+    ];
+    expect(sortApplications(rows, "followUpDate", "asc").map((r) => r.id)).toEqual(["soon", "late", "none"]);
+  });
+
+  it("sorts source lexically", () => {
+    const rows = [base({ id: "b", source: "Referral" }), base({ id: "a", source: "LinkedIn" })];
+    expect(sortApplications(rows, "source", "asc").map((r) => r.id)).toEqual(["a", "b"]);
+  });
+});

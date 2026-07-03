@@ -2,7 +2,9 @@ import type { ApplicationRow } from "@/app/(app)/applications/page";
 import { parseSalaryRange } from "@/lib/applications/salary";
 
 export type TableFilter = "all" | "active" | "saved";
-export type TableSort = "company" | "status" | "applied" | "salary" | "lastActivity";
+export type TableSort =
+  | "company" | "status" | "applied" | "salary" | "lastActivity"
+  | "followUpDate" | "source" | "contact" | "nextStep";
 export type SortDir = "asc" | "desc";
 
 export const DEFAULT_DIR: Record<TableSort, SortDir> = {
@@ -11,6 +13,10 @@ export const DEFAULT_DIR: Record<TableSort, SortDir> = {
   applied: "desc",
   salary: "desc",
   lastActivity: "desc",
+  followUpDate: "asc",
+  source: "asc",
+  contact: "asc",
+  nextStep: "asc",
 };
 
 const STATUS_RANK: Record<string, number> = {
@@ -39,6 +45,16 @@ function nullsLast(a: number | null, b: number | null, flip: number): number {
   if (a === null) return 1; // a after b
   if (b === null) return -1; // a before b
   return flip * (a - b);
+}
+
+/** Case-insensitive lexical compare, nulls/empties last in both directions. */
+function lexNullsLast(a: string | null, b: string | null, flip: number): number {
+  const av = a?.trim() ? a.toLowerCase() : null;
+  const bv = b?.trim() ? b.toLowerCase() : null;
+  if (av === null && bv === null) return 0;
+  if (av === null) return 1;
+  if (bv === null) return -1;
+  return flip * av.localeCompare(bv);
 }
 
 const ACTIVE_STATUSES = new Set(["applied", "interviewing", "offer"]);
@@ -98,6 +114,16 @@ export function sortApplications(
           flip
         )
       );
+    case "followUpDate":
+      return copy.sort((a, b) =>
+        nullsLast(a.followUpDate?.getTime() ?? null, b.followUpDate?.getTime() ?? null, flip)
+      );
+    case "source":
+      return copy.sort((a, b) => lexNullsLast(a.source, b.source, flip));
+    case "contact":
+      return copy.sort((a, b) => lexNullsLast(a.contact, b.contact, flip));
+    case "nextStep":
+      return copy.sort((a, b) => lexNullsLast(a.nextStep, b.nextStep, flip));
     case "lastActivity":
     default:
       return copy.sort((a, b) => flip * (a.updatedAt.getTime() - b.updatedAt.getTime()));
