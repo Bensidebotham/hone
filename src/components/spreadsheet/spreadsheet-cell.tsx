@@ -151,7 +151,7 @@ function CellInput({
       onBlur={() => commit(value)}
       onKeyDown={(e) => {
         if (e.key === "Enter") { e.preventDefault(); commit(value); }
-        else if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+        else if (e.key === "Escape") { e.preventDefault(); committedRef.current = true; onCancel(); }
       }}
       className="h-7 w-full rounded border border-input bg-background px-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
     />
