@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { Trash2, ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { Trash2, ExternalLink, Sparkles, Check } from "lucide-react";
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +31,10 @@ interface DetailProps {
   app: ApplicationRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  tailored?: boolean;
 }
 
-export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps) {
+export function ApplicationDetailPanel({ app, open, onOpenChange, tailored }: DetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
@@ -110,7 +112,14 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
           <div className="flex items-start gap-3">
             <CompanyLogo company={app.company} size={44} />
             <div className="min-w-0 flex-1">
-              <DrawerTitle className="truncate">{app.title}</DrawerTitle>
+              <div className="flex items-center gap-2">
+                <DrawerTitle className="truncate">{app.title}</DrawerTitle>
+                {tailored && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#def6e0] px-2 py-0.5 text-xs font-medium text-[#268a3a]">
+                    <Check className="size-3" /> Tailored
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">{app.company}</p>
             </div>
             <DrawerClose
@@ -138,6 +147,12 @@ export function ApplicationDetailPanel({ app, open, onOpenChange }: DetailProps)
                 View original <ExternalLink className="size-3.5" />
               </a>
             )}
+            <Button
+              variant="secondary"
+              render={<Link href={`/tailor?applicationId=${app.id}`} />}
+            >
+              <Sparkles className="size-4" /> Tailor résumé
+            </Button>
           </div>
 
           <hr className="border-border" />

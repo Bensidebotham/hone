@@ -43,8 +43,8 @@ function parseDate(iso: string): Date | null {
 }
 
 export function ApplicationSpreadsheet({
-  applications, prefs,
-}: { applications: ApplicationRow[]; prefs: TablePrefs | null }) {
+  applications, prefs, tailoredIds,
+}: { applications: ApplicationRow[]; prefs: TablePrefs | null; tailoredIds?: Set<string> }) {
   const [apps, setApps] = useState(applications);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<TableFilter>("all");
@@ -316,7 +316,12 @@ export function ApplicationSpreadsheet({
         )}
       </div>
 
-      <ApplicationDetailPanel app={detail} open={detailOpen} onOpenChange={setDetailOpen} />
+      <ApplicationDetailPanel
+        app={detail}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        tailored={detail ? (tailoredIds?.has(detail.id) ?? false) : false}
+      />
     </TooltipProvider>
   );
 }

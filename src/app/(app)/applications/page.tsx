@@ -5,6 +5,7 @@ import { ApplicationSpreadsheet } from "@/components/spreadsheet/application-spr
 import { AddJobDialog } from "@/components/add-job-dialog";
 import { isKanbanStatus } from "@/lib/applications/kanban";
 import type { TablePrefs } from "@/lib/applications/columns";
+import { getTailoredApplicationIds } from "@/lib/resume/tailorings";
 
 export const dynamic = "force-dynamic";
 
@@ -19,12 +20,13 @@ export default async function ApplicationsPage({
   const { status } = await searchParams;
   const statusFilter = status && isKanbanStatus(status) ? status : undefined;
 
-  const [apps, dbUser] = await Promise.all([
+  const [apps, dbUser, tailoredIds] = await Promise.all([
     prisma.application.findMany({
       where: { userId: user.id, ...(statusFilter ? { status: statusFilter } : {}) },
       orderBy: { updatedAt: "desc" },
     }),
     prisma.user.findUnique({ where: { id: user.id }, select: { applicationTablePrefs: true } }),
+    getTailoredApplicationIds(user.id),
   ]);
   const prefs = (dbUser?.applicationTablePrefs ?? null) as TablePrefs | null;
 
@@ -40,7 +42,7 @@ export default async function ApplicationsPage({
         </div>
         <AddJobDialog />
       </div>
-      <ApplicationSpreadsheet applications={apps} prefs={prefs} />
+      <ApplicationSpreadsheet applications={apps} prefs={prefs} tailoredIds={tailoredIds} />
     </div>
   );
 }
