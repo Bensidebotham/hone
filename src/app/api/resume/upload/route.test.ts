@@ -15,9 +15,18 @@ import { POST } from "@/app/api/resume/upload/route";
 describe("POST /api/resume/upload", () => {
   beforeEach(() => { create.mockResolvedValue({ id: "r1", text: "RESUME TEXT" }); });
   it("creates a resume + pending analysis and triggers the task", async () => {
-    const file = new File([Buffer.from("x")], "cv.pdf", { type: "application/pdf" });
-    const fd = new FormData(); fd.set("file", file);
-    const req = new Request("http://x/api/resume/upload", { method: "POST", body: fd });
+    // Stub the request's formData() with a duck-typed file. The route reads
+    // `arrayBuffer`/`name`/`type` (it deliberately avoids `instanceof File`),
+    // so this exercises its real logic without the jsdom↔undici File-class
+    // mismatch that a real File/FormData/Request triggers in the test env.
+    const fileLike = {
+      name: "cv.pdf",
+      type: "application/pdf",
+      arrayBuffer: async () => new TextEncoder().encode("x").buffer,
+    };
+    const req = {
+      formData: async () => ({ get: (k: string) => (k === "file" ? fileLike : null) }),
+    } as unknown as Request;
     const res = await POST(req);
     expect(res.status).toBe(200);
     expect(create).toHaveBeenCalled();

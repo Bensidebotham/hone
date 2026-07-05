@@ -1,7 +1,23 @@
-ignoredBuiltDependencies:
-  - sharp
-  - unrs-resolver
+# Every dependency that ships a build/install script must be classified, or
+# pnpm exits non-zero ("ERR_PNPM_IGNORED_BUILDS") asking you to decide.
+# true  = run its build script (prisma needs its query engines)
+# false = skip it (prebuilt binaries / not needed for our usage)
+allowBuilds:
+  '@google/genai': false
+  '@prisma/engines': true
+  msw: false
+  prisma: true
+  protobufjs: false
+  sharp: false
 
+# Legacy equivalents (respected by older pnpm) kept in sync with allowBuilds.
 onlyBuiltDependencies:
   - "@prisma/engines"
   - prisma
+
+ignoredBuiltDependencies:
+  - "@google/genai"
+  - msw
+  - protobufjs
+  - sharp
+  - unrs-resolver
