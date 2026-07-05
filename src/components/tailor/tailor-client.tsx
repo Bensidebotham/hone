@@ -13,25 +13,30 @@ interface TailorClientProps {
   applicationId?: string;
 }
 
+function UploadResumePrompt() {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6 text-sm">
+      <p className="font-semibold">Upload a résumé first</p>
+      <p className="mt-1 text-muted-foreground">Tailoring works from your uploaded résumé. Add one to get started.</p>
+      <Button className="mt-3" render={<Link href="/profile" />}>Go to Profile</Button>
+    </div>
+  );
+}
+
 export function TailorClient({ hasResume, initialJobDescription = "", applicationId }: TailorClientProps) {
   const [jd, setJd] = useState(initialJobDescription);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<TailoringResult | null>(null);
+  const [needsResume, setNeedsResume] = useState(false);
 
-  if (!hasResume) {
-    return (
-      <div className="rounded-2xl border border-border bg-card p-6 text-sm">
-        <p className="font-semibold">Upload a résumé first</p>
-        <p className="mt-1 text-muted-foreground">Tailoring works from your uploaded résumé. Add one to get started.</p>
-        <Button className="mt-3" render={<Link href="/profile" />}>Go to Profile</Button>
-      </div>
-    );
+  if (!hasResume || needsResume) {
+    return <UploadResumePrompt />;
   }
 
   async function submit() {
     if (!jd.trim()) { setError("Paste a job description first."); return; }
-    setLoading(true); setError(null); setResult(null);
+    setLoading(true); setError(null); setResult(null); setNeedsResume(false);
     try {
       const res = await fetch("/api/resume/tailor", {
         method: "POST",
@@ -45,7 +50,11 @@ export function TailorClient({ hasResume, initialJobDescription = "", applicatio
       }
       const data = await res.json();
       if (!res.ok) {
-        setError(data?.code === "no_resume" ? "Upload a résumé first (Profile)." : (data?.error ?? "Something went wrong."));
+        if (data?.code === "no_resume") {
+          setNeedsResume(true);
+        } else {
+          setError(data?.error ?? "Something went wrong.");
+        }
         return;
       }
       setResult(data as TailoringResult);

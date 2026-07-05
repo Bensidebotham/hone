@@ -27,3 +27,10 @@ it("surfaces a rate-limit error", async () => {
   fireEvent.click(screen.getByRole("button", { name: /tailor/i }));
   await waitFor(() => expect(screen.getByText(/too many requests/i)).toBeInTheDocument());
 });
+
+it("shows an upload prompt linking to /profile when the server reports no_resume", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 400, json: async () => ({ error: "No résumé", code: "no_resume" }) }));
+  render(<TailorClient hasResume initialJobDescription="JD" />);
+  fireEvent.click(screen.getByRole("button", { name: /tailor/i }));
+  await waitFor(() => expect(screen.getByRole("link", { name: /profile/i })).toHaveAttribute("href", "/profile"));
+});
