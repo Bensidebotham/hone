@@ -22,6 +22,7 @@ model User {
   appEvents            ApplicationEvent[]
   gmailConnection      GmailConnection?
   emailInsights        EmailInsight[]
+  tailorings           Tailoring[]
   lastDashboardVisitAt DateTime?
   applicationTablePrefs Json?
   createdAt            DateTime          @default(now())
@@ -80,6 +81,7 @@ model Resume {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   analyses    Analysis[]
   resumeGoals ResumeGoal[]
+  tailorings  Tailoring[]
 }
 
 enum AnalysisType {
@@ -166,6 +168,7 @@ model Application {
   user          User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   events        ApplicationEvent[]
   emailInsights EmailInsight[]
+  tailorings    Tailoring[]
 }
 
 model HealthScore {
@@ -222,4 +225,20 @@ model EmailInsight {
   application     Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 
   @@index([userId, outcome])
+}
+
+model Tailoring {
+  id             String       @id @default(cuid())
+  userId         String
+  resumeId       String
+  applicationId  String?
+  company        String?
+  jobTitle       String?
+  jobDescription String
+  fitScore       Int
+  result         Json
+  createdAt      DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume         Resume       @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  application    Application? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 }
