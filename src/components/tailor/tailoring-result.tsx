@@ -65,10 +65,18 @@ export function TailoringResultView({ result }: { result: TailoringResult }) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Section title="Strengths">
-          <ul className="list-disc pl-5 text-sm">{result.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
+          {result.strengths.length === 0 ? (
+            <p className="text-sm text-muted-foreground">None.</p>
+          ) : (
+            <ul className="list-disc pl-5 text-sm">{result.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
+          )}
         </Section>
         <Section title="Gaps">
-          <ul className="list-disc pl-5 text-sm">{result.gaps.map((s, i) => <li key={i}>{s}</li>)}</ul>
+          {result.gaps.length === 0 ? (
+            <p className="text-sm text-muted-foreground">None.</p>
+          ) : (
+            <ul className="list-disc pl-5 text-sm">{result.gaps.map((s, i) => <li key={i}>{s}</li>)}</ul>
+          )}
         </Section>
       </div>
     </div>

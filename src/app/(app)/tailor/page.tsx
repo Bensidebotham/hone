@@ -43,9 +43,14 @@ export default async function TailorPage({
           <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-muted-foreground">Past tailorings</h2>
           <ul className="flex flex-col gap-2">
             {history.map((t) => (
-              <li key={t.id} className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2 text-sm">
-                <span className="font-medium">{t.company ? `${t.company}${t.jobTitle ? ` · ${t.jobTitle}` : ""}` : "Pasted job description"}</span>
-                <span className="text-muted-foreground">Fit {t.fitScore} · {new Date(t.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+              <li key={t.id}>
+                <Link
+                  href={`/tailor/${t.id}`}
+                  className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-2 text-sm transition-colors hover:bg-muted"
+                >
+                  <span className="font-medium">{t.company ? `${t.company}${t.jobTitle ? ` · ${t.jobTitle}` : ""}` : "Pasted job description"}</span>
+                  <span className="text-muted-foreground">Fit {t.fitScore} · {new Date(t.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</span>
+                </Link>
               </li>
             ))}
           </ul>

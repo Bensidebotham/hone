@@ -19,3 +19,8 @@ it("renders every section of the result", () => {
   expect(screen.getByText("backend depth")).toBeInTheDocument();// strength
   expect(screen.getByText("no k8s")).toBeInTheDocument();       // gap
 });
+
+it("shows a None. fallback for empty strengths and gaps", () => {
+  render(<TailoringResultView result={{ ...result, strengths: [], gaps: [] }} />);
+  expect(screen.getAllByText("None.")).toHaveLength(2);
+});
