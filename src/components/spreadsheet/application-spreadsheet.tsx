@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { Search } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { EmptyState } from "@/components/empty-state";
 import { ApplicationStatTiles } from "@/components/application-stat-tiles";
 import { AddJobDialog } from "@/components/add-job-dialog";
 import { ApplicationDetailPanel } from "@/components/application-detail-panel";
@@ -219,8 +218,7 @@ export function ApplicationSpreadsheet({
           </div>
         )}
 
-        {apps.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
             <div className="flex flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3">
               <Search className="size-4 text-muted-foreground" />
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search company or role…"
@@ -235,7 +233,6 @@ export function ApplicationSpreadsheet({
             ))}
             <ColumnMenu columns={columns} onChange={applyColumns} />
           </div>
-        )}
 
         {selection.size > 0 && (
           <BulkActionBar
@@ -256,12 +253,7 @@ export function ApplicationSpreadsheet({
           />
         )}
 
-        {apps.length === 0 ? (
-          <EmptyState title="No applications yet"
-            message="Track a role you applied to anywhere — it doesn't have to come from this app."
-            action={<AddJobDialog />} />
-        ) : (
-          <div className="overflow-x-auto rounded-2xl border border-border bg-card">
+        <div className="overflow-x-auto rounded-2xl border border-border bg-card">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-muted/40 text-left text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
@@ -308,12 +300,36 @@ export function ApplicationSpreadsheet({
                   />
                 ))}
                 {rows.length === 0 && (
-                  <tr><td colSpan={columns.length + 2} className="px-4 py-10 text-center text-sm text-muted-foreground">No applications match your filters.</td></tr>
+                  <>
+                    <tr className="border-t border-border/60">
+                      <td className="w-9 px-2 py-2" />
+                      <td colSpan={columns.length + 1} className="px-3 py-2 text-sm text-muted-foreground">
+                        {apps.length === 0 ? (
+                          <AddJobDialog trigger={
+                            <button type="button" className="font-medium text-primary hover:underline">
+                              Add your first application →
+                            </button>
+                          } />
+                        ) : (
+                          "No applications match your filters."
+                        )}
+                      </td>
+                      <td className="w-9 px-2 py-2" />
+                    </tr>
+                    {Array.from({ length: 9 }).map((_, i) => (
+                      <tr key={`blank-${i}`} className="h-9 border-t border-border/60">
+                        <td className="w-9 px-2 py-2">&nbsp;</td>
+                        {columns.map((col) => (
+                          <td key={col.id} className="px-3 py-2">&nbsp;</td>
+                        ))}
+                        <td className="w-9 px-2 py-2">&nbsp;</td>
+                      </tr>
+                    ))}
+                  </>
                 )}
               </tbody>
             </table>
           </div>
-        )}
       </div>
 
       <ApplicationDetailPanel

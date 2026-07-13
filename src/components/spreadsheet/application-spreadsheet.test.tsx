@@ -34,6 +34,17 @@ it("commits an inline salary edit via updateApplicationFields", () => {
   expect(actions.updateApplicationFields).toHaveBeenCalledWith("a1", { salary: "$200k" });
 });
 
+it("always renders as a sheet, even with no applications (no empty-state card)", () => {
+  render(<ApplicationSpreadsheet applications={[]} prefs={null} />);
+  // The column header row (grid chrome) is present at all times…
+  expect(screen.getByText("Company")).toBeInTheDocument();
+  expect(screen.getByText("Status")).toBeInTheDocument();
+  // …the old "No applications yet" empty-state card is gone…
+  expect(screen.queryByText("No applications yet")).not.toBeInTheDocument();
+  // …and a first-row hint offers to add the first application.
+  expect(screen.getByText("Add your first application →")).toBeInTheDocument();
+});
+
 it("preserves the seed character when typing to start an edit (does not clobber it)", () => {
   render(<ApplicationSpreadsheet applications={[mk({})]} prefs={null} />);
   // Activate the salary cell (a text/editable cell), then type a printable
