@@ -30,7 +30,10 @@ export default async function Dashboard() {
 
       <div className="grid gap-5 lg:grid-cols-[1.7fr_1fr]">
         <div className="space-y-5">
-          <SuggestedUpdates suggestions={summary.pendingSuggestions} />
+          <SuggestedUpdates
+            suggestions={summary.pendingSuggestions}
+            accountEmail={user.email}
+          />
           <UpdatesFeed updates={summary.appUpdates} />
           {/* ApplicationTrendChart already renders its own Card with title — render directly, no wrapper */}
           <ApplicationTrendChart points={summary.applicationTrend} />

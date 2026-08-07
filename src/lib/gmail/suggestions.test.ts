@@ -6,6 +6,8 @@ const recordEvent = vi.fn().mockResolvedValue(undefined);
 const createManual = vi.fn().mockResolvedValue(undefined);
 const appFindFirst = vi.fn();
 const appUpdate = vi.fn().mockResolvedValue({});
+const refreshToken = vi.fn();
+const getMessageMock = vi.fn();
 
 vi.mock("@/lib/db", () => ({
   prisma: {
@@ -19,12 +21,15 @@ vi.mock("@/lib/applications/actions", () => ({
 }));
 vi.mock("@/lib/applications/events", () => ({ recordApplicationEvent: (...a: any) => recordEvent(...a) }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+vi.mock("@/lib/gmail/oauth", () => ({ refreshAccessToken: (...a: any) => refreshToken(...a) }));
+vi.mock("@/lib/gmail/client", () => ({ getMessage: (...a: any) => getMessageMock(...a) }));
 
-import { confirmSuggestion, dismissSuggestion } from "@/lib/gmail/suggestions";
+import { confirmSuggestion, dismissSuggestion, getSuggestionEmail } from "@/lib/gmail/suggestions";
 
 beforeEach(() => {
   insightUpdate.mockClear(); findUnique.mockClear(); recordEvent.mockClear();
   createManual.mockClear(); appFindFirst.mockClear(); appUpdate.mockClear();
+  refreshToken.mockReset(); getMessageMock.mockReset();
 });
 
 describe("confirmSuggestion", () => {
@@ -68,5 +73,72 @@ describe("dismissSuggestion", () => {
     findUnique.mockResolvedValue({ id: "i1", userId: "u1" });
     await dismissSuggestion("i1");
     expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i1" }, data: { outcome: "dismissed" } });
+  });
+});
+
+describe("getSuggestionEmail", () => {
+  it("reads the body through to Gmail and cleans it up", async () => {
+    findUnique.mockResolvedValue({
+      id: "i1", userId: "u1", messageId: "m1", fromEmail: "jobs@nvidia.com",
+      subject: "Your application", snippet: "We received…",
+    });
+    refreshToken.mockResolvedValue({ accessToken: "tok" });
+    getMessageMock.mockResolvedValue({
+      from: "NVIDIA Recruiting <jobs@nvidia.com>",
+      subject: "Your application to NVIDIA",
+      body: "Thanks for applying.\r\n\r\n\r\n\r\nWe'll be in touch.",
+    });
+
+    const res = await getSuggestionEmail("i1");
+    expect(getMessageMock).toHaveBeenCalledWith("tok", "m1");
+    expect(res).toEqual({
+      ok: true,
+      from: "NVIDIA Recruiting <jobs@nvidia.com>",
+      subject: "Your application to NVIDIA",
+      body: "Thanks for applying.\n\nWe'll be in touch.",
+    });
+  });
+
+  it("falls back to the stored snippet when the message has no text body", async () => {
+    findUnique.mockResolvedValue({
+      id: "i1", userId: "u1", messageId: "m1", fromEmail: "jobs@nvidia.com",
+      subject: "Your application", snippet: "We received your application",
+    });
+    refreshToken.mockResolvedValue({ accessToken: "tok" });
+    getMessageMock.mockResolvedValue({ from: "", subject: "", body: "   " });
+
+    const res = await getSuggestionEmail("i1");
+    expect(res).toMatchObject({ ok: true, body: "We received your application", subject: "Your application" });
+  });
+
+  it("never calls Gmail for a seeded demo insight", async () => {
+    findUnique.mockResolvedValue({
+      id: "i1", userId: "u1", messageId: "demo:Initech:status_change",
+      fromEmail: "recruiting@initech.com", subject: "Next steps", snippet: null,
+    });
+    const res = await getSuggestionEmail("i1");
+    expect(refreshToken).not.toHaveBeenCalled();
+    expect(getMessageMock).not.toHaveBeenCalled();
+    expect(res).toMatchObject({ ok: true, subject: "Next steps" });
+  });
+
+  it("reports a disconnected inbox instead of throwing", async () => {
+    findUnique.mockResolvedValue({ id: "i1", userId: "u1", messageId: "m1", fromEmail: "a@b.com", subject: null, snippet: null });
+    refreshToken.mockResolvedValue(null);
+    expect(await getSuggestionEmail("i1")).toMatchObject({ ok: false });
+    expect(getMessageMock).not.toHaveBeenCalled();
+  });
+
+  it("reports a Gmail failure instead of throwing", async () => {
+    findUnique.mockResolvedValue({ id: "i1", userId: "u1", messageId: "m1", fromEmail: "a@b.com", subject: null, snippet: null });
+    refreshToken.mockResolvedValue({ accessToken: "tok" });
+    getMessageMock.mockRejectedValue(new Error("Gmail API 404"));
+    expect(await getSuggestionEmail("i1")).toMatchObject({ ok: false });
+  });
+
+  it("refuses to read an insight belonging to another user", async () => {
+    findUnique.mockResolvedValue({ id: "i1", userId: "other", messageId: "m1", fromEmail: "a@b.com", subject: null, snippet: null });
+    expect(await getSuggestionEmail("i1")).toMatchObject({ ok: false });
+    expect(getMessageMock).not.toHaveBeenCalled();
   });
 });
