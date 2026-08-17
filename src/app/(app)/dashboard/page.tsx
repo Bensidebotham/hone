@@ -6,17 +6,25 @@ import { UpdatesFeed } from "@/components/dashboard/updates-feed";
 import { SuggestedUpdates } from "@/components/dashboard/suggested-updates";
 import { InterviewingCard } from "@/components/dashboard/interviewing-card";
 import { ActivityStatsCard } from "@/components/dashboard/activity-stats-card";
+import { GmailReconnectBanner } from "@/components/gmail/reconnect-banner";
+import { getGmailStatus } from "@/lib/gmail/status";
 
 export const dynamic = "force-dynamic";
 
 export default async function Dashboard() {
   const user = await requireUser();
-  const summary = await getDashboardSummary(user.id);
+  const [summary, gmail] = await Promise.all([
+    getDashboardSummary(user.id),
+    getGmailStatus(user.id),
+  ]);
   // Stamp AFTER reading, so this load still shows everything since the prior visit.
   await stampDashboardVisit(user.id);
 
   return (
     <div className="space-y-6">
+      {/* Above the greeting: a dead inbox silently starves everything below it. */}
+      <GmailReconnectBanner status={gmail} />
+
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight">
           Good morning, {user.name ?? "there"}

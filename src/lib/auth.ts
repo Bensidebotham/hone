@@ -29,10 +29,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         // Mark the connection live; seed historyId lazily on first sync.
         if (user?.id) {
+          // Re-consenting is the only thing that can heal a dead grant, so
+          // clear the warning here rather than waiting for the next sync.
           await prisma.gmailConnection.upsert({
             where: { userId: user.id },
-            create: { userId: user.id, syncEnabled: true },
-            update: { syncEnabled: true },
+            create: { userId: user.id, syncEnabled: true, needsReauth: false },
+            update: { syncEnabled: true, needsReauth: false },
           });
         }
       }

@@ -99,7 +99,7 @@ describe("getSuggestionEmail", () => {
       id: "i1", userId: "u1", messageId: "m1", fromEmail: "jobs@nvidia.com",
       subject: "Your application", snippet: "We received…",
     });
-    refreshToken.mockResolvedValue({ accessToken: "tok" });
+    refreshToken.mockResolvedValue({ ok: true, accessToken: "tok" });
     getMessageMock.mockResolvedValue({
       from: "NVIDIA Recruiting <jobs@nvidia.com>",
       subject: "Your application to NVIDIA",
@@ -121,7 +121,7 @@ describe("getSuggestionEmail", () => {
       id: "i1", userId: "u1", messageId: "m1", fromEmail: "jobs@nvidia.com",
       subject: "Your application", snippet: "We received your application",
     });
-    refreshToken.mockResolvedValue({ accessToken: "tok" });
+    refreshToken.mockResolvedValue({ ok: true, accessToken: "tok" });
     getMessageMock.mockResolvedValue({ from: "", subject: "", body: "   " });
 
     const res = await getSuggestionEmail("i1");
@@ -141,14 +141,14 @@ describe("getSuggestionEmail", () => {
 
   it("reports a disconnected inbox instead of throwing", async () => {
     findUnique.mockResolvedValue({ id: "i1", userId: "u1", messageId: "m1", fromEmail: "a@b.com", subject: null, snippet: null });
-    refreshToken.mockResolvedValue(null);
+    refreshToken.mockResolvedValue({ ok: false, reason: "revoked" });
     expect(await getSuggestionEmail("i1")).toMatchObject({ ok: false });
     expect(getMessageMock).not.toHaveBeenCalled();
   });
 
   it("reports a Gmail failure instead of throwing", async () => {
     findUnique.mockResolvedValue({ id: "i1", userId: "u1", messageId: "m1", fromEmail: "a@b.com", subject: null, snippet: null });
-    refreshToken.mockResolvedValue({ accessToken: "tok" });
+    refreshToken.mockResolvedValue({ ok: true, accessToken: "tok" });
     getMessageMock.mockRejectedValue(new Error("Gmail API 404"));
     expect(await getSuggestionEmail("i1")).toMatchObject({ ok: false });
   });

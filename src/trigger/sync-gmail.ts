@@ -1,6 +1,7 @@
 import { schedules } from "@trigger.dev/sdk";
 import { prisma } from "@/lib/db";
 import { refreshAccessToken } from "@/lib/gmail/oauth";
+import { shouldFlagReauth } from "@/lib/gmail/token";
 import { getProfile, listHistory, getMessage } from "@/lib/gmail/client";
 import { isJobRelevant } from "@/lib/gmail/relevance";
 import { classifyEmail } from "@/lib/gmail/classify";
@@ -19,11 +20,31 @@ export const syncGmail = schedules.task({
       // Isolate each connection: one user's failure must not abort the others.
       try {
         const token = await refreshAccessToken(conn.userId);
-        if (!token) {
-          console.warn(`[sync-gmail] no refresh token for user ${conn.userId} — skipping`);
+        if (!token.ok) {
+          // Distinguish a dead grant from a transient blip: only the former is
+          // surfaced to the user, and only the former is worth logging loudly.
+          if (shouldFlagReauth(token.reason)) {
+            await prisma.gmailConnection.update({
+              where: { userId: conn.userId },
+              data: { needsReauth: true },
+            });
+            console.error(
+              `[sync-gmail] Gmail grant is dead (${token.reason}) for user ${conn.userId} — flagged for reconnect`
+            );
+          } else {
+            console.warn(`[sync-gmail] transient token failure for user ${conn.userId} — retrying next run`);
+          }
           continue;
         }
         const accessToken = token.accessToken;
+
+        // The grant works, so clear any previous warning.
+        if (conn.needsReauth) {
+          await prisma.gmailConnection.update({
+            where: { userId: conn.userId },
+            data: { needsReauth: false },
+          });
+        }
 
         // Seed the cursor on first run; never backfill historical mail.
         if (!conn.historyId) {

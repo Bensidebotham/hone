@@ -202,6 +202,8 @@ model GmailConnection {
   syncEnabled  Boolean   @default(true)
   connectedAt  DateTime  @default(now())
   lastSyncedAt DateTime?
+  /// Set when Google rejects the refresh token; only re-consent clears it.
+  needsReauth  Boolean   @default(false)
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

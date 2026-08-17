@@ -80,7 +80,7 @@ export async function getSuggestionEmail(insightId: string): Promise<SuggestionE
   }
 
   const token = await refreshAccessToken(user.id);
-  if (!token) return { ok: false, error: "Gmail isn't connected. Reconnect it in Settings to read this email." };
+  if (!token.ok) return { ok: false, error: "Gmail isn't connected. Reconnect it in Settings to read this email." };
 
   try {
     const msg = await getMessage(token.accessToken, insight.messageId);
