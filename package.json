@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "deploy:trigger": "pnpm dlx trigger.dev@4 deploy",
+    "deploy:trigger": "pnpm dlx trigger.dev@4.4.6 deploy",
     "postinstall": "prisma generate"
   },
   "dependencies": {
