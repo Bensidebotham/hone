@@ -6,6 +6,7 @@ const recordEvent = vi.fn().mockResolvedValue(undefined);
 const createManual = vi.fn().mockResolvedValue(undefined);
 const appFindFirst = vi.fn();
 const appUpdate = vi.fn().mockResolvedValue({});
+const refreshMock = vi.fn();
 const refreshToken = vi.fn();
 const getMessageMock = vi.fn();
 
@@ -20,7 +21,7 @@ vi.mock("@/lib/applications/actions", () => ({
   createManualApplication: (...a: any) => createManual(...a),
 }));
 vi.mock("@/lib/applications/events", () => ({ recordApplicationEvent: (...a: any) => recordEvent(...a) }));
-vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+vi.mock("next/cache", () => ({ revalidatePath: () => {}, refresh: (...a: any) => refreshMock(...a) }));
 vi.mock("@/lib/gmail/oauth", () => ({ refreshAccessToken: (...a: any) => refreshToken(...a) }));
 vi.mock("@/lib/gmail/client", () => ({ getMessage: (...a: any) => getMessageMock(...a) }));
 
@@ -29,7 +30,7 @@ import { confirmSuggestion, dismissSuggestion, getSuggestionEmail } from "@/lib/
 beforeEach(() => {
   insightUpdate.mockClear(); findUnique.mockClear(); recordEvent.mockClear();
   createManual.mockClear(); appFindFirst.mockClear(); appUpdate.mockClear();
-  refreshToken.mockReset(); getMessageMock.mockReset();
+  refreshToken.mockReset(); getMessageMock.mockReset(); refreshMock.mockClear();
 });
 
 describe("confirmSuggestion", () => {
@@ -48,6 +49,7 @@ describe("confirmSuggestion", () => {
       expect.objectContaining({ applicationId: "app1", type: "email_detected", fromStatus: "applied", toStatus: "rejected" })
     );
     expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i1" }, data: { outcome: "accepted" } });
+    expect(refreshMock).toHaveBeenCalled();
   });
 
   it("creates a new application for a new_application suggestion", async () => {
@@ -73,6 +75,21 @@ describe("dismissSuggestion", () => {
     findUnique.mockResolvedValue({ id: "i1", userId: "u1" });
     await dismissSuggestion("i1");
     expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i1" }, data: { outcome: "dismissed" } });
+  });
+
+  // The dashboard is force-dynamic, so revalidatePath has no cache entry to
+  // invalidate — without refresh() the row survives until a manual reload.
+  it("refreshes the client router so the row leaves the card", async () => {
+    findUnique.mockResolvedValue({ id: "i1", userId: "u1" });
+    await dismissSuggestion("i1");
+    expect(refreshMock).toHaveBeenCalled();
+  });
+
+  it("does not refresh when the insight belongs to someone else", async () => {
+    findUnique.mockResolvedValue({ id: "i1", userId: "other" });
+    await dismissSuggestion("i1");
+    expect(insightUpdate).not.toHaveBeenCalled();
+    expect(refreshMock).not.toHaveBeenCalled();
   });
 });
 

@@ -8,7 +8,7 @@ import { refreshAccessToken } from "@/lib/gmail/oauth";
 import { getMessage } from "@/lib/gmail/client";
 import { isDemoMessageId } from "@/lib/gmail/message-link";
 import { cleanEmailBody } from "@/lib/gmail/body";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, refresh } from "next/cache";
 import type { AppStatus } from "@prisma/client";
 
 export interface PendingSuggestion {
@@ -137,7 +137,10 @@ export async function confirmSuggestion(insightId: string): Promise<void> {
   }
 
   await prisma.emailInsight.update({ where: { id: insightId }, data: { outcome: "accepted" } });
-  revalidatePath("/dashboard");
+  // The dashboard is force-dynamic, so there's no cache entry for revalidatePath
+  // to invalidate — refresh() is what actually re-renders it for the client
+  // router, and a confirm also moves the Updates feed and the stats tiles.
+  refresh();
 }
 
 export async function dismissSuggestion(insightId: string): Promise<void> {
@@ -145,5 +148,5 @@ export async function dismissSuggestion(insightId: string): Promise<void> {
   const insight = await prisma.emailInsight.findUnique({ where: { id: insightId } });
   if (!insight || insight.userId !== user.id) return;
   await prisma.emailInsight.update({ where: { id: insightId }, data: { outcome: "dismissed" } });
-  revalidatePath("/dashboard");
+  refresh();
 }
