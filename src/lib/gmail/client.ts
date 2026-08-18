@@ -96,3 +96,42 @@ export async function getMessage(accessToken: string, id: string): Promise<Fetch
     body: extractBody(json.payload),
   };
 }
+
+/**
+ * Message IDs from the last `days` days, newest first, capped at `max`.
+ *
+ * Used to catch up after a sync gap: history.list only reaches back about a
+ * week, so once its cursor 404s the only way to recover missed mail is to walk
+ * the mailbox by date instead. Deliberately unfiltered beyond the date window —
+ * `isJobRelevant` remains the single source of truth for what counts as
+ * job-search mail, rather than a second copy of that logic in Gmail query
+ * syntax that could silently under-match.
+ */
+export async function listRecentMessages(
+  accessToken: string,
+  { days, max }: { days: number; max: number }
+): Promise<string[]> {
+  const ids = new Set<string>();
+  let pageToken: string | undefined;
+
+  do {
+    const qs = new URLSearchParams({
+      q: `newer_than:${days}d`,
+      maxResults: String(Math.min(100, max)),
+    });
+    if (pageToken) qs.set("pageToken", pageToken);
+    const json: any = await gget(accessToken, `/messages?${qs.toString()}`);
+
+    const before = ids.size;
+    for (const m of json.messages ?? []) {
+      if (m.id) ids.add(m.id);
+      if (ids.size >= max) return [...ids];
+    }
+    // No new ids means the cap can never be reached; stop rather than spin on
+    // a nextPageToken the server keeps handing back.
+    if (ids.size === before) break;
+    pageToken = json.nextPageToken;
+  } while (pageToken);
+
+  return [...ids];
+}

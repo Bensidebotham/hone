@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { connectionUpdateOnSignIn } from "@/lib/gmail/connection";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
@@ -30,11 +31,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Mark the connection live; seed historyId lazily on first sync.
         if (user?.id) {
           // Re-consenting is the only thing that can heal a dead grant, so
-          // clear the warning here rather than waiting for the next sync.
+          // clear the warning here rather than waiting for the next sync — and
+          // on a real reconnect, drop the cursor so the next sync catches up.
+          const update = connectionUpdateOnSignIn({
+            hasFreshRefreshToken: Boolean(account.refresh_token),
+          });
           await prisma.gmailConnection.upsert({
             where: { userId: user.id },
-            create: { userId: user.id, syncEnabled: true, needsReauth: false },
-            update: { syncEnabled: true, needsReauth: false },
+            create: { userId: user.id, ...update },
+            update,
           });
         }
       }

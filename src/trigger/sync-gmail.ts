@@ -2,12 +2,22 @@ import { schedules } from "@trigger.dev/sdk";
 import { prisma } from "@/lib/db";
 import { refreshAccessToken } from "@/lib/gmail/oauth";
 import { shouldFlagReauth } from "@/lib/gmail/token";
-import { getProfile, listHistory, getMessage } from "@/lib/gmail/client";
+import { getProfile, listHistory, listRecentMessages, getMessage } from "@/lib/gmail/client";
 import { isJobRelevant } from "@/lib/gmail/relevance";
 import { classifyEmail } from "@/lib/gmail/classify";
 import { matchApplication, type AppCandidate } from "@/lib/gmail/match";
 import { decideEmailAction } from "@/lib/gmail/decide";
 import { applyDecision } from "@/lib/gmail/apply";
+
+/**
+ * How far back a catch-up scan reaches. Sized to cover a multi-week outage
+ * (a revoked Google grant can go unnoticed for weeks), not just the ~1 week
+ * of history.list retention.
+ */
+const CATCH_UP_DAYS = 30;
+
+/** Bounds one catch-up: every id here costs a messages.get. */
+const CATCH_UP_MAX_MESSAGES = 500;
 
 export const syncGmail = schedules.task({
   id: "sync-gmail",
@@ -46,31 +56,48 @@ export const syncGmail = schedules.task({
           });
         }
 
-        // Seed the cursor on first run; never backfill historical mail.
-        if (!conn.historyId) {
-          const { historyId } = await getProfile(accessToken);
-          await prisma.gmailConnection.update({
-            where: { userId: conn.userId },
-            data: { historyId, lastSyncedAt: new Date() },
-          });
-          continue;
+        // Two ways to arrive without a usable cursor: a fresh connect (or
+        // reconnect, which clears it), and a cursor Gmail has since purged.
+        // Both mean mail arrived while we weren't watching, and history.list
+        // cannot reach back past roughly a week — so the only way to recover
+        // it is to scan the mailbox by date.
+        let catchUp = !conn.historyId;
+        let messageIds: string[] = [];
+        let latestHistoryId: string | null = conn.historyId;
+
+        if (!catchUp) {
+          try {
+            const res = await listHistory(accessToken, conn.historyId!);
+            messageIds = res.messageIds;
+            latestHistoryId = res.latestHistoryId;
+          } catch (err: any) {
+            if (err?.status !== 404) {
+              console.warn(`[sync-gmail] history.list failed for ${conn.userId}`, err);
+              continue;
+            }
+            catchUp = true;
+          }
         }
 
-        let messageIds: string[];
-        let latestHistoryId: string | null;
-        try {
-          const res = await listHistory(accessToken, conn.historyId);
-          messageIds = res.messageIds;
-          latestHistoryId = res.latestHistoryId;
-        } catch (err: any) {
-          if (err?.status === 404) {
-            // Cursor too old — reseed and skip this run (avoids a full scan).
-            const { historyId } = await getProfile(accessToken);
-            await prisma.gmailConnection.update({ where: { userId: conn.userId }, data: { historyId } });
-            continue;
+        if (catchUp) {
+          messageIds = await listRecentMessages(accessToken, {
+            days: CATCH_UP_DAYS,
+            max: CATCH_UP_MAX_MESSAGES,
+          });
+          // Take the cursor from the profile so the next run resumes
+          // incrementally from now, whatever the scan turned up.
+          const { historyId } = await getProfile(accessToken);
+          latestHistoryId = historyId;
+
+          if (messageIds.length >= CATCH_UP_MAX_MESSAGES) {
+            console.warn(
+              `[sync-gmail] catch-up for ${conn.userId} hit the ${CATCH_UP_MAX_MESSAGES}-message cap — older mail in the ${CATCH_UP_DAYS}-day window was not scanned`
+            );
+          } else {
+            console.log(
+              `[sync-gmail] catching up ${conn.userId}: scanning ${messageIds.length} messages from the last ${CATCH_UP_DAYS} days`
+            );
           }
-          console.warn(`[sync-gmail] history.list failed for ${conn.userId}`, err);
-          continue;
         }
 
         // Candidate applications for matching (this user's tracked apps).
