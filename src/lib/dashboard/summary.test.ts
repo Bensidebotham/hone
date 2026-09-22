@@ -14,6 +14,7 @@ vi.mock("@/lib/health/app-updates", () => ({
 }));
 vi.mock("@/lib/gmail/suggestions", () => ({
   getPendingSuggestions: vi.fn().mockResolvedValue([]),
+  getRecentAutoAdds: vi.fn().mockResolvedValue([]),
 }));
 vi.mock("@/lib/dashboard/stats", () => ({
   getActivityStats: vi.fn().mockResolvedValue({ appliedThisWeek: 3 }),
@@ -33,6 +34,7 @@ describe("getDashboardSummary", () => {
       applicationTrend: [{ weekStart: "2026-06-08", count: 2 }],
       appUpdates: [{ id: "e1", isNew: true }],
       pendingSuggestions: [],
+      recentAutoAdds: [],
       activityStats: { appliedThisWeek: 3 },
       interviewing: [{ id: "a1" }],
     });

@@ -8,6 +8,8 @@ import { refreshAccessToken } from "@/lib/gmail/oauth";
 import { getMessage } from "@/lib/gmail/client";
 import { isDemoMessageId } from "@/lib/gmail/message-link";
 import { cleanEmailBody } from "@/lib/gmail/body";
+import { matchApplication } from "@/lib/gmail/match";
+import { ROLE_PLACEHOLDER } from "@/lib/gmail/decide";
 import { revalidatePath, refresh } from "next/cache";
 import type { AppStatus } from "@prisma/client";
 
@@ -101,6 +103,8 @@ export async function confirmSuggestion(insightId: string): Promise<void> {
   const insight = await prisma.emailInsight.findUnique({ where: { id: insightId } });
   if (!insight || insight.userId !== user.id) return;
 
+  let applicationId: string;
+
   if (insight.kind === "status_change" && insight.applicationId && insight.suggestedStatus) {
     // Apply the status and log it as email-detected, preserving the "from email"
     // provenance in the Updates feed (same event type as the auto-applied path).
@@ -126,17 +130,29 @@ export async function confirmSuggestion(insightId: string): Promise<void> {
       });
     }
     revalidatePath("/applications");
-  } else if (insight.kind === "new_application" && insight.company && insight.title) {
-    await createManualApplication({
+    applicationId = insight.applicationId;
+  } else if (insight.kind === "new_application" && insight.company) {
+    // The app may have been tracked since this was suggested (by hand, or by a
+    // later auto-add) — link to it rather than creating a duplicate.
+    const apps = await prisma.application.findMany({
+      where: { userId: user.id },
+      select: { id: true, company: true, title: true, status: true },
+      orderBy: { createdAt: "desc" },
+    });
+    const match = matchApplication(
+      { fromEmail: insight.fromEmail, company: insight.company, title: insight.title },
+      apps.map((a) => ({ applicationId: a.id, company: a.company, title: a.title, status: a.status }))
+    );
+    applicationId = match.applicationId ?? await createManualApplication({
       company: insight.company,
-      title: insight.title,
+      title: insight.title ?? ROLE_PLACEHOLDER,
       status: insight.suggestedStatus ?? "applied",
     });
   } else {
     return;
   }
 
-  await prisma.emailInsight.update({ where: { id: insightId }, data: { outcome: "accepted" } });
+  await prisma.emailInsight.update({ where: { id: insightId }, data: { outcome: "accepted", applicationId } });
   // The dashboard is force-dynamic, so there's no cache entry for revalidatePath
   // to invalidate — refresh() is what actually re-renders it for the client
   // router, and a confirm also moves the Updates feed and the stats tiles.
@@ -148,5 +164,54 @@ export async function dismissSuggestion(insightId: string): Promise<void> {
   const insight = await prisma.emailInsight.findUnique({ where: { id: insightId } });
   if (!insight || insight.userId !== user.id) return;
   await prisma.emailInsight.update({ where: { id: insightId }, data: { outcome: "dismissed" } });
+  refresh();
+}
+
+export interface RecentAutoAdd {
+  id: string;
+  messageId: string;
+  threadId: string | null;
+  fromEmail: string;
+  subject: string | null;
+  createdAt: Date;
+  application: { id: string; company: string; title: string; status: AppStatus };
+}
+
+const AUTO_ADD_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Applications sync added on its own in the last week, so they can be checked (or undone). */
+export async function getRecentAutoAdds(userId: string, now = new Date()): Promise<RecentAutoAdd[]> {
+  const rows = await prisma.emailInsight.findMany({
+    where: {
+      userId, kind: "new_application", outcome: "auto_applied",
+      applicationId: { not: null }, createdAt: { gte: new Date(now.getTime() - AUTO_ADD_WINDOW_MS) },
+    },
+    include: { application: { select: { id: true, company: true, title: true, status: true } } },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+  });
+  return rows
+    .filter((r) => r.application)
+    .map((r) => ({
+      id: r.id, messageId: r.messageId, threadId: r.threadId, fromEmail: r.fromEmail,
+      subject: r.subject, createdAt: r.createdAt, application: r.application!,
+    }));
+}
+
+/**
+ * Take back an application sync added on its own. The insight stays (dismissed)
+ * so the same email can never re-create it.
+ */
+export async function undoAutoAdd(insightId: string): Promise<void> {
+  const user = await requireUser();
+  const insight = await prisma.emailInsight.findUnique({ where: { id: insightId } });
+  if (!insight || insight.userId !== user.id) return;
+  if (insight.kind !== "new_application" || insight.outcome !== "auto_applied") return;
+
+  if (insight.applicationId) {
+    await prisma.application.deleteMany({ where: { id: insight.applicationId, userId: user.id } });
+  }
+  await prisma.emailInsight.update({ where: { id: insightId }, data: { outcome: "dismissed", applicationId: null } });
+  revalidatePath("/applications");
   refresh();
 }

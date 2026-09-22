@@ -69,7 +69,7 @@ export interface ManualApplicationInput {
 }
 
 /** Create a standalone application for a role tracked anywhere. */
-export async function createManualApplication(input: ManualApplicationInput) {
+export async function createManualApplication(input: ManualApplicationInput): Promise<string> {
   const user = await requireUser();
   const company = input.company.trim();
   const title = input.title.trim();
@@ -102,6 +102,7 @@ export async function createManualApplication(input: ManualApplicationInput) {
   });
 
   revalidatePath("/applications");
+  return application.id;
 }
 
 export interface ApplicationFieldsInput {

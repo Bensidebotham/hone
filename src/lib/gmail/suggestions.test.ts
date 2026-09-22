@@ -3,17 +3,26 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const insightUpdate = vi.fn().mockResolvedValue({});
 const findUnique = vi.fn();
 const recordEvent = vi.fn().mockResolvedValue(undefined);
-const createManual = vi.fn().mockResolvedValue(undefined);
+const createManual = vi.fn().mockResolvedValue("created-id");
 const appFindFirst = vi.fn();
 const appUpdate = vi.fn().mockResolvedValue({});
 const refreshMock = vi.fn();
 const refreshToken = vi.fn();
 const getMessageMock = vi.fn();
+const appFindMany = vi.fn().mockResolvedValue([]);
+const appDeleteMany = vi.fn().mockResolvedValue({ count: 1 });
+const insightFindMany = vi.fn().mockResolvedValue([]);
 
 vi.mock("@/lib/db", () => ({
   prisma: {
-    emailInsight: { findUnique: (...a: any) => findUnique(...a), update: (...a: any) => insightUpdate(...a) },
-    application: { findFirst: (...a: any) => appFindFirst(...a), update: (...a: any) => appUpdate(...a) },
+    emailInsight: {
+      findUnique: (...a: any) => findUnique(...a), update: (...a: any) => insightUpdate(...a),
+      findMany: (...a: any) => insightFindMany(...a),
+    },
+    application: {
+      findFirst: (...a: any) => appFindFirst(...a), update: (...a: any) => appUpdate(...a),
+      findMany: (...a: any) => appFindMany(...a), deleteMany: (...a: any) => appDeleteMany(...a),
+    },
   },
 }));
 vi.mock("@/lib/auth", () => ({ requireUser: () => Promise.resolve({ id: "u1" }) }));
@@ -25,12 +34,13 @@ vi.mock("next/cache", () => ({ revalidatePath: () => {}, refresh: (...a: any) =>
 vi.mock("@/lib/gmail/oauth", () => ({ refreshAccessToken: (...a: any) => refreshToken(...a) }));
 vi.mock("@/lib/gmail/client", () => ({ getMessage: (...a: any) => getMessageMock(...a) }));
 
-import { confirmSuggestion, dismissSuggestion, getSuggestionEmail } from "@/lib/gmail/suggestions";
+import { confirmSuggestion, dismissSuggestion, getSuggestionEmail, undoAutoAdd, getRecentAutoAdds } from "@/lib/gmail/suggestions";
 
 beforeEach(() => {
   insightUpdate.mockClear(); findUnique.mockClear(); recordEvent.mockClear();
   createManual.mockClear(); appFindFirst.mockClear(); appUpdate.mockClear();
   refreshToken.mockReset(); getMessageMock.mockReset(); refreshMock.mockClear();
+  appFindMany.mockClear(); appDeleteMany.mockClear(); insightFindMany.mockClear();
 });
 
 describe("confirmSuggestion", () => {
@@ -48,18 +58,18 @@ describe("confirmSuggestion", () => {
     expect(recordEvent).toHaveBeenCalledWith(
       expect.objectContaining({ applicationId: "app1", type: "email_detected", fromStatus: "applied", toStatus: "rejected" })
     );
-    expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i1" }, data: { outcome: "accepted" } });
+    expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i1" }, data: { outcome: "accepted", applicationId: "app1" } });
     expect(refreshMock).toHaveBeenCalled();
   });
 
   it("creates a new application for a new_application suggestion", async () => {
     findUnique.mockResolvedValue({
-      id: "i2", userId: "u1", kind: "new_application", applicationId: null,
+      id: "i2", userId: "u1", kind: "new_application", applicationId: null, fromEmail: "no-reply@greenhouse.io",
       suggestedStatus: "applied", company: "Acme", title: "SWE",
     });
     await confirmSuggestion("i2");
     expect(createManual).toHaveBeenCalledWith(expect.objectContaining({ company: "Acme", title: "SWE", status: "applied" }));
-    expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i2" }, data: { outcome: "accepted" } });
+    expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i2" }, data: { outcome: "accepted", applicationId: "created-id" } });
   });
 
   it("ignores an insight that does not belong to the user", async () => {
@@ -157,5 +167,80 @@ describe("getSuggestionEmail", () => {
     findUnique.mockResolvedValue({ id: "i1", userId: "other", messageId: "m1", fromEmail: "a@b.com", subject: null, snippet: null });
     expect(await getSuggestionEmail("i1")).toMatchObject({ ok: false });
     expect(getMessageMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("confirmSuggestion — new_application edge cases", () => {
+  it("uses the placeholder when the email named no role", async () => {
+    findUnique.mockResolvedValue({
+      id: "i4", userId: "u1", kind: "new_application", applicationId: null, fromEmail: "no-reply@ashbyhq.com",
+      suggestedStatus: "applied", company: "Valon", title: null,
+    });
+    await confirmSuggestion("i4");
+    expect(createManual).toHaveBeenCalledWith(expect.objectContaining({ company: "Valon", title: "Role not specified" }));
+    expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i4" }, data: { outcome: "accepted", applicationId: "created-id" } });
+  });
+
+  it("links to an already-tracked app instead of duplicating it", async () => {
+    findUnique.mockResolvedValue({
+      id: "i5", userId: "u1", kind: "new_application", applicationId: null,
+      fromEmail: "Roblox Assessment <noreply@email.roblox.com>",
+      suggestedStatus: "interviewing", company: "Roblox", title: null,
+    });
+    appFindMany.mockResolvedValue([{ id: "app-roblox", company: "Roblox", title: "SWE", status: "applied" }]);
+    await confirmSuggestion("i5");
+    expect(createManual).not.toHaveBeenCalled();
+    expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i5" }, data: { outcome: "accepted", applicationId: "app-roblox" } });
+  });
+
+  it("does nothing when there is no company at all", async () => {
+    findUnique.mockResolvedValue({
+      id: "i6", userId: "u1", kind: "new_application", applicationId: null, fromEmail: "x@y.com",
+      suggestedStatus: "applied", company: null, title: null,
+    });
+    await confirmSuggestion("i6");
+    expect(createManual).not.toHaveBeenCalled();
+    expect(insightUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("undoAutoAdd", () => {
+  it("deletes the auto-added app and dismisses the insight", async () => {
+    findUnique.mockResolvedValue({ id: "i7", userId: "u1", kind: "new_application", outcome: "auto_applied", applicationId: "app9" });
+    await undoAutoAdd("i7");
+    expect(appDeleteMany).toHaveBeenCalledWith({ where: { id: "app9", userId: "u1" } });
+    expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i7" }, data: { outcome: "dismissed", applicationId: null } });
+    expect(refreshMock).toHaveBeenCalled();
+  });
+
+  it("refuses anything that is not an auto-added application", async () => {
+    findUnique.mockResolvedValue({ id: "i8", userId: "u1", kind: "status_change", outcome: "auto_applied", applicationId: "app9" });
+    await undoAutoAdd("i8");
+    expect(appDeleteMany).not.toHaveBeenCalled();
+    expect(insightUpdate).not.toHaveBeenCalled();
+  });
+
+  it("refuses another user's insight", async () => {
+    findUnique.mockResolvedValue({ id: "i9", userId: "other", kind: "new_application", outcome: "auto_applied", applicationId: "app9" });
+    await undoAutoAdd("i9");
+    expect(appDeleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("getRecentAutoAdds", () => {
+  it("queries the last 7 days of live auto-added applications", async () => {
+    const now = new Date("2026-09-23T12:00:00Z");
+    insightFindMany.mockResolvedValue([{
+      id: "i1", messageId: "m1", threadId: "t1", fromEmail: "f", subject: "s", createdAt: now,
+      application: { id: "a1", company: "Valon", title: "Role not specified", status: "applied" },
+    }]);
+    const rows = await getRecentAutoAdds("u1", now);
+    expect(insightFindMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        userId: "u1", kind: "new_application", outcome: "auto_applied",
+        applicationId: { not: null }, createdAt: { gte: new Date("2026-09-16T12:00:00Z") },
+      },
+    }));
+    expect(rows[0].application.company).toBe("Valon");
   });
 });
