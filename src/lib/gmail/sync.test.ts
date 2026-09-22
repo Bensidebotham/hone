@@ -19,10 +19,14 @@ vi.mock("@/lib/gmail/client", () => ({
   searchMessages: (...a: any) => search(...a),
   getMessage: (...a: any) => getMsg(...a),
 }));
-vi.mock("@/lib/gmail/classify", () => ({ classifyEmail: (...a: any) => classify(...a) }));
+vi.mock("@/lib/gmail/classify", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/gmail/classify")>()),
+  classifyEmail: (...a: any) => classify(...a),
+}));
 vi.mock("@/lib/gmail/apply", () => ({ applyDecision: (...a: any) => apply(...a) }));
 
 import { syncConnection, MAX_PER_RUN } from "@/lib/gmail/sync";
+import { UnclassifiableEmailError } from "@/lib/gmail/classify";
 
 const now = new Date("2026-09-23T12:00:00Z");
 const conn = { userId: "u1", lastSyncedAt: new Date("2026-09-22T12:00:00Z") };
@@ -134,5 +138,35 @@ describe("syncConnection", () => {
     expect(res).toMatchObject({ found: MAX_PER_RUN + 5, processed: MAX_PER_RUN, capped: true });
     expect(getMsg).not.toHaveBeenCalledWith("tok", ids[ids.length - 1]); // oldest ids first
     expect(connUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("syncConnection — review fixes", () => {
+  it("ledgers a message the model can never classify instead of retrying it forever", async () => {
+    search.mockResolvedValue(["0a"]);
+    getMsg.mockResolvedValue(msg("0a", 20));
+    classify.mockRejectedValue(new UnclassifiableEmailError("schema"));
+
+    const res = await syncConnection(conn, "tok", now);
+
+    expect(apply).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({ messageId: "0a", confidence: 0 }),
+      { action: "ignore", reason: "unclassifiable", applicationId: null },
+    );
+    expect(res).toMatchObject({ processed: 1, failed: 0 });
+    expect(connUpdate).toHaveBeenCalled();
+  });
+
+  it("does not re-create a company the user undid or dismissed — it suggests instead", async () => {
+    insightFindMany.mockImplementation(async (args: any) =>
+      args.where.outcome === "dismissed" ? [{ company: "Visa Inc." }] : []);
+    search.mockResolvedValue(["0a"]);
+    getMsg.mockResolvedValue(msg("0a", 20));
+    classify.mockResolvedValue({ status: "applied", confidence: 0.95, company: "Visa", title: null, reason: "" });
+
+    await syncConnection(conn, "tok", now);
+
+    expect(apply.mock.calls[0][2]).toEqual({ action: "suggest_new", suggestedStatus: "applied", company: "Visa", title: null });
   });
 });

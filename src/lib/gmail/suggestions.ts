@@ -9,7 +9,7 @@ import { getMessage } from "@/lib/gmail/client";
 import { isDemoMessageId } from "@/lib/gmail/message-link";
 import { cleanEmailBody } from "@/lib/gmail/body";
 import { matchApplication } from "@/lib/gmail/match";
-import { ROLE_PLACEHOLDER } from "@/lib/gmail/decide";
+import { ROLE_PLACEHOLDER, canAutoMove } from "@/lib/gmail/decide";
 import { revalidatePath, refresh } from "next/cache";
 import type { AppStatus } from "@prisma/client";
 
@@ -98,6 +98,21 @@ export async function getSuggestionEmail(insightId: string): Promise<SuggestionE
   }
 }
 
+/**
+ * Apply a confirmed status and log it as email-detected, preserving the "from
+ * email" provenance in the Updates feed (same event type as the auto-applied path).
+ */
+async function moveApplication(userId: string, applicationId: string, from: AppStatus, to: AppStatus) {
+  await prisma.application.update({
+    where: { id: applicationId },
+    data: { status: to, appliedAt: to === "applied" ? new Date() : undefined },
+  });
+  if (from !== to) {
+    await recordApplicationEvent({ applicationId, userId, type: "email_detected", fromStatus: from, toStatus: to });
+  }
+  revalidatePath("/applications");
+}
+
 export async function confirmSuggestion(insightId: string): Promise<void> {
   const user = await requireUser();
   const insight = await prisma.emailInsight.findUnique({ where: { id: insightId } });
@@ -106,30 +121,12 @@ export async function confirmSuggestion(insightId: string): Promise<void> {
   let applicationId: string;
 
   if (insight.kind === "status_change" && insight.applicationId && insight.suggestedStatus) {
-    // Apply the status and log it as email-detected, preserving the "from email"
-    // provenance in the Updates feed (same event type as the auto-applied path).
     const app = await prisma.application.findFirst({
       where: { id: insight.applicationId, userId: user.id },
       select: { status: true },
     });
     if (!app) return;
-    await prisma.application.update({
-      where: { id: insight.applicationId },
-      data: {
-        status: insight.suggestedStatus,
-        appliedAt: insight.suggestedStatus === "applied" ? new Date() : undefined,
-      },
-    });
-    if (app.status !== insight.suggestedStatus) {
-      await recordApplicationEvent({
-        applicationId: insight.applicationId,
-        userId: user.id,
-        type: "email_detected",
-        fromStatus: app.status,
-        toStatus: insight.suggestedStatus,
-      });
-    }
-    revalidatePath("/applications");
+    await moveApplication(user.id, insight.applicationId, app.status, insight.suggestedStatus);
     applicationId = insight.applicationId;
   } else if (insight.kind === "new_application" && insight.company) {
     // The app may have been tracked since this was suggested (by hand, or by a
@@ -143,11 +140,20 @@ export async function confirmSuggestion(insightId: string): Promise<void> {
       { fromEmail: insight.fromEmail, company: insight.company, title: insight.title },
       apps.map((a) => ({ applicationId: a.id, company: a.company, title: a.title, status: a.status }))
     );
-    applicationId = match.applicationId ?? await createManualApplication({
-      company: insight.company,
-      title: insight.title ?? ROLE_PLACEHOLDER,
-      status: insight.suggestedStatus ?? "applied",
-    });
+    if (match.applicationId && !match.titleMismatch) {
+      applicationId = match.applicationId;
+      // Confirming "Roblox → interviewing" should move Roblox, but never backwards.
+      const to = insight.suggestedStatus;
+      if (to && match.currentStatus && canAutoMove(match.currentStatus, to)) {
+        await moveApplication(user.id, applicationId, match.currentStatus, to);
+      }
+    } else {
+      applicationId = await createManualApplication({
+        company: insight.company,
+        title: insight.title ?? ROLE_PLACEHOLDER,
+        status: insight.suggestedStatus ?? "applied",
+      });
+    }
   } else {
     return;
   }

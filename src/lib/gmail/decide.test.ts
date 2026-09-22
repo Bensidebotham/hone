@@ -82,3 +82,26 @@ it("constants", () => {
   expect(AUTO_APPLY_THRESHOLD).toBe(0.8);
   expect(ROLE_PLACEHOLDER).toBe("Role not specified");
 });
+
+describe("decideEmailAction — another role at a tracked company", () => {
+  it("suggests a new application for a confirmation naming a different role", () => {
+    const d = decideEmailAction(
+      { ...base, status: "applied", title: "Applied Scientist" },
+      { applicationId: "a1", currentStatus: "applied", titleMismatch: true },
+    );
+    expect(d).toEqual({ action: "suggest_new", suggestedStatus: "applied", company: "Acme", title: "Applied Scientist" });
+  });
+
+  it("does the same after the first application was rejected", () => {
+    const d = decideEmailAction(
+      { ...base, status: "applied", title: "Applied Scientist" },
+      { applicationId: "a1", currentStatus: "rejected", titleMismatch: true },
+    );
+    expect(d.action).toBe("suggest_new");
+  });
+
+  it("still treats a mismatched rejection as an update to the tracked app", () => {
+    const d = decideEmailAction(base, { applicationId: "a1", currentStatus: "applied", titleMismatch: true });
+    expect(d.action).toBe("auto_apply");
+  });
+});

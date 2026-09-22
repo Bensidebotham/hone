@@ -14,6 +14,14 @@ export interface ModelLike {
 
 interface AnalyzeOpts { client?: ModelLike; }
 
+/** The model answered with no text at all (e.g. a safety block). */
+export class EmptyModelResponseError extends Error {
+  constructor() {
+    super("analyze: model returned no text (response.text is undefined)");
+    this.name = "EmptyModelResponseError";
+  }
+}
+
 function defaultClient(): ModelLike {
   const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY! });
   // ai.models satisfies ModelLike — generateContent is defined on the Models class
@@ -29,7 +37,7 @@ export async function analyze<T = unknown>(input: AnalyzeInput, opts: AnalyzeOpt
   });
   const text = res.text;
   if (text === undefined) {
-    throw new Error("analyze: model returned no text (response.text is undefined)");
+    throw new EmptyModelResponseError();
   }
   return JSON.parse(text) as T;
 }

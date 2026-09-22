@@ -83,3 +83,33 @@ describe("matchApplication — company names", () => {
     expect(matchApplication({ fromEmail: "x@stripe.com", company: "Stripe" }, apps).applicationId).toBe("newer");
   });
 });
+
+describe("matchApplication — title mismatch", () => {
+  const amazon: AppCandidate[] = [
+    { applicationId: "sde", company: "Amazon", title: "Software Development Engineer", status: "applied" },
+  ];
+
+  it("flags an email naming a role no tracked app at that company shares", () => {
+    const m = matchApplication({ fromEmail: "x@amazon.com", company: "Amazon", title: "Applied Scientist" }, amazon);
+    expect(m).toEqual({ applicationId: "sde", currentStatus: "applied", titleMismatch: true });
+  });
+
+  it("does not flag overlapping titles", () => {
+    const m = matchApplication({ fromEmail: "x@amazon.com", company: "Amazon", title: "Software Engineer" }, amazon);
+    expect(m.titleMismatch).toBe(false);
+  });
+
+  it("does not flag when either side has no usable title", () => {
+    const placeholder: AppCandidate[] = [{ applicationId: "p", company: "Amazon", title: "Role not specified", status: "applied" }];
+    expect(matchApplication({ fromEmail: "x@amazon.com", company: "Amazon", title: "Applied Scientist" }, placeholder).titleMismatch).toBe(false);
+    expect(matchApplication({ fromEmail: "x@amazon.com", company: "Amazon", title: null }, amazon).titleMismatch).toBe(false);
+  });
+
+  it("never prefers the placeholder title when scoring", () => {
+    const apps: AppCandidate[] = [
+      { applicationId: "placeholder", company: "Acme", title: "Role not specified", status: "applied" },
+      { applicationId: "real", company: "Acme", title: "Backend Engineer", status: "applied" },
+    ];
+    expect(matchApplication({ fromEmail: "x@acme.com", company: "Acme", title: "Role: Backend Engineer" }, apps).applicationId).toBe("real");
+  });
+});

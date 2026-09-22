@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { analyze, type ModelLike } from "@/lib/ai/provider";
+import { analyze, EmptyModelResponseError, type ModelLike } from "@/lib/ai/provider";
 
 export const EMAIL_STATUSES = ["applied", "interviewing", "offer", "rejected", "none"] as const;
 export type EmailStatus = (typeof EMAIL_STATUSES)[number];
@@ -47,11 +47,32 @@ export function buildClassifyPrompt(email: EmailForClassify): { system: string; 
   return { system, prompt };
 }
 
+/**
+ * The model answered, but not with a usable classification. Retrying the same
+ * email won't change that, so sync ledgers it rather than retrying forever.
+ * Transport errors (rate limits, 5xx, network) are NOT wrapped — they retry.
+ */
+export class UnclassifiableEmailError extends Error {
+  constructor(reason: string) {
+    super(`unclassifiable email: ${reason}`);
+    this.name = "UnclassifiableEmailError";
+  }
+}
+
 export async function classifyEmail(
   email: EmailForClassify,
   opts: { client?: ModelLike } = {}
 ): Promise<Classification> {
   const { system, prompt } = buildClassifyPrompt(email);
-  const raw = await analyze<unknown>({ system, prompt }, opts);
-  return ClassificationSchema.parse(raw);
+  let raw: unknown;
+  try {
+    raw = await analyze<unknown>({ system, prompt }, opts);
+  } catch (err) {
+    if (err instanceof SyntaxError) throw new UnclassifiableEmailError("model output was not JSON");
+    if (err instanceof EmptyModelResponseError) throw new UnclassifiableEmailError("model returned no text");
+    throw err;
+  }
+  const parsed = ClassificationSchema.safeParse(raw);
+  if (!parsed.success) throw new UnclassifiableEmailError("model output failed the schema");
+  return parsed.data;
 }

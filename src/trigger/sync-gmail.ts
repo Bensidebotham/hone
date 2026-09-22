@@ -9,6 +9,9 @@ export const syncGmail = schedules.task({
   cron: "0 * * * *", // hourly — every 15 min burned the Trigger.dev budget
   // A backfill run classifies up to MAX_PER_RUN messages, one model call each.
   maxDuration: 900,
+  // Never overlap: parallel runs would classify the same batch twice (double
+  // Gemini spend, duplicate status events) and each would hold the cursor.
+  queue: { concurrencyLimit: 1 },
   run: async () => {
     const connections = await prisma.gmailConnection.findMany({ where: { syncEnabled: true } });
     let processed = 0;

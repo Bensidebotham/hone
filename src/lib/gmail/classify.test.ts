@@ -3,6 +3,7 @@ import {
   buildClassifyPrompt,
   ClassificationSchema,
   classifyEmail,
+  UnclassifiableEmailError,
 } from "@/lib/gmail/classify";
 
 describe("buildClassifyPrompt", () => {
@@ -72,5 +73,28 @@ describe("classifyEmail", () => {
     );
     expect(out.status).toBe("interviewing");
     expect(out.confidence).toBeCloseTo(0.86);
+  });
+});
+
+describe("classifyEmail — deterministic failures", () => {
+  const email = { from: "x@acme.com", subject: "s", body: "b" };
+  const withText = (text: string | undefined) => ({ generateContent: vi.fn().mockResolvedValue({ text }) });
+
+  it("flags output that fails the schema as unclassifiable", async () => {
+    await expect(classifyEmail(email, { client: withText('{"status":"ghosted"}') }))
+      .rejects.toBeInstanceOf(UnclassifiableEmailError);
+  });
+  it("flags non-JSON output as unclassifiable", async () => {
+    await expect(classifyEmail(email, { client: withText("not json") }))
+      .rejects.toBeInstanceOf(UnclassifiableEmailError);
+  });
+  it("flags an empty (e.g. safety-blocked) response as unclassifiable", async () => {
+    await expect(classifyEmail(email, { client: withText(undefined) }))
+      .rejects.toBeInstanceOf(UnclassifiableEmailError);
+  });
+  it("lets transport errors through untouched, so they are retried", async () => {
+    const client = { generateContent: vi.fn().mockRejectedValue(Object.assign(new Error("503"), { status: 503 })) };
+    const err = await classifyEmail(email, { client }).catch((e) => e);
+    expect(err).not.toBeInstanceOf(UnclassifiableEmailError);
   });
 });

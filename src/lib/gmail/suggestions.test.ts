@@ -244,3 +244,36 @@ describe("getRecentAutoAdds", () => {
     expect(rows[0].application.company).toBe("Valon");
   });
 });
+
+describe("confirmSuggestion — linking to a tracked app", () => {
+  const stale = {
+    id: "i10", userId: "u1", kind: "new_application", applicationId: null,
+    fromEmail: "Roblox Assessment <noreply@email.roblox.com>",
+    suggestedStatus: "interviewing", company: "Roblox", title: null,
+  };
+
+  it("moves the linked app to the suggested status", async () => {
+    findUnique.mockResolvedValue(stale);
+    appFindMany.mockResolvedValue([{ id: "app-roblox", company: "Roblox", title: "SWE", status: "applied" }]);
+    await confirmSuggestion("i10");
+    expect(appUpdate).toHaveBeenCalledWith({ where: { id: "app-roblox" }, data: { status: "interviewing", appliedAt: undefined } });
+    expect(recordEvent).toHaveBeenCalledWith(expect.objectContaining({
+      applicationId: "app-roblox", type: "email_detected", fromStatus: "applied", toStatus: "interviewing",
+    }));
+  });
+
+  it("never moves the linked app backwards", async () => {
+    findUnique.mockResolvedValue({ ...stale, suggestedStatus: "applied" });
+    appFindMany.mockResolvedValue([{ id: "app-roblox", company: "Roblox", title: "SWE", status: "interviewing" }]);
+    await confirmSuggestion("i10");
+    expect(appUpdate).not.toHaveBeenCalled();
+    expect(insightUpdate).toHaveBeenCalledWith({ where: { id: "i10" }, data: { outcome: "accepted", applicationId: "app-roblox" } });
+  });
+
+  it("creates a new app when the suggestion names a different role than the tracked one", async () => {
+    findUnique.mockResolvedValue({ ...stale, fromEmail: "x@amazon.jobs", company: "Amazon", title: "Applied Scientist", suggestedStatus: "applied" });
+    appFindMany.mockResolvedValue([{ id: "sde", company: "Amazon", title: "Software Development Engineer", status: "applied" }]);
+    await confirmSuggestion("i10");
+    expect(createManual).toHaveBeenCalledWith(expect.objectContaining({ company: "Amazon", title: "Applied Scientist" }));
+  });
+});

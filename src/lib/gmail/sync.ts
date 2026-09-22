@@ -2,9 +2,9 @@ import type { AppStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { searchMessages, getMessage, type FetchedMessage } from "@/lib/gmail/client";
 import { buildSearchQueries, syncWindowStart } from "@/lib/gmail/queries";
-import { classifyEmail } from "@/lib/gmail/classify";
-import { matchApplication, type AppCandidate } from "@/lib/gmail/match";
-import { decideEmailAction } from "@/lib/gmail/decide";
+import { classifyEmail, UnclassifiableEmailError, type Classification } from "@/lib/gmail/classify";
+import { matchApplication, isSameCompany, type AppCandidate } from "@/lib/gmail/match";
+import { decideEmailAction, type Decision } from "@/lib/gmail/decide";
 import { applyDecision } from "@/lib/gmail/apply";
 
 /** Messages classified per run; a backfill drains over several hourly runs. */
@@ -61,6 +61,12 @@ export async function syncConnection(
     applicationId: a.id, company: a.company, title: a.title, status: a.status,
   }));
 
+  // Companies the user undid or dismissed: never auto-add them again, only suggest.
+  const rejectedAdds = (await prisma.emailInsight.findMany({
+    where: { userId: conn.userId, kind: "new_application", outcome: "dismissed", company: { not: null } },
+    select: { company: true },
+  })).map((r) => r.company!);
+
   const queries = buildSearchQueries({
     after: syncWindowStart(conn.lastSyncedAt, now),
     trackedCompanies: apps.filter((a) => ACTIVE.has(a.status)).map((a) => a.company),
@@ -92,18 +98,36 @@ export async function syncConnection(
   let processed = 0;
   for (const msg of messages) {
     try {
-      const classification = await classifyEmail({
-        from: msg.from, subject: msg.subject, body: msg.body, receivedAt: msg.receivedAt,
-      });
-      const match = matchApplication(
-        { fromEmail: msg.from, company: classification.company, title: classification.title },
-        candidates
-      );
-      const decision = decideEmailAction(classification, match);
+      let classification: Classification | null = null;
+      try {
+        classification = await classifyEmail({
+          from: msg.from, subject: msg.subject, body: msg.body, receivedAt: msg.receivedAt,
+        });
+      } catch (err) {
+        if (!(err instanceof UnclassifiableEmailError)) throw err;
+        // Ledger it: a message that can never be classified must not pin the window.
+        console.warn(`[sync-gmail] ledgering unclassifiable message ${msg.id}: ${err.message}`);
+      }
+
+      let decision: Decision = { action: "ignore", reason: "unclassifiable", applicationId: null };
+      if (classification) {
+        const match = matchApplication(
+          { fromEmail: msg.from, company: classification.company, title: classification.title },
+          candidates
+        );
+        decision = decideEmailAction(classification, match);
+        if (decision.action === "create") {
+          const { status, company, title } = decision;
+          if (rejectedAdds.some((c) => isSameCompany(c, company))) {
+            decision = { action: "suggest_new", suggestedStatus: status, company, title };
+          }
+        }
+      }
+
       const result = await applyDecision(conn.userId, {
         messageId: msg.id, threadId: msg.threadId, fromEmail: msg.from,
         subject: msg.subject, snippet: msg.snippet,
-        confidence: classification.confidence, receivedAt: msg.receivedAt,
+        confidence: classification?.confidence ?? 0, receivedAt: msg.receivedAt,
       }, decision);
       processed++;
 

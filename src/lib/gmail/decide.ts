@@ -38,6 +38,12 @@ export function decideEmailAction(c: Classification, m: MatchResult): Decision {
   const toStatus = c.status as AppStatus;
 
   if (m.applicationId) {
+    // A confirmation naming a different role is a second application at the
+    // same company, not an update. Suggest rather than create: "SWE" vs
+    // "Software Engineer" would otherwise duplicate.
+    if (m.titleMismatch && toStatus === "applied") {
+      return { action: "suggest_new", suggestedStatus: toStatus, company: c.company?.trim() || null, title: c.title };
+    }
     const from = m.currentStatus!;
     if (from === toStatus) return { action: "ignore", reason: "already in status", applicationId: m.applicationId };
     if (!canAutoMove(from, toStatus)) {

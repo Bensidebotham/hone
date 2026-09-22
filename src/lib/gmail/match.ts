@@ -1,5 +1,6 @@
 import type { AppStatus } from "@prisma/client";
 import { isGenericSenderDomain } from "@/lib/gmail/queries";
+import { ROLE_PLACEHOLDER } from "@/lib/gmail/decide";
 
 /** A tracked application. Callers pass these newest-created first. */
 export interface AppCandidate {
@@ -12,6 +13,11 @@ export interface AppCandidate {
 export interface MatchResult {
   applicationId: string | null;
   currentStatus: AppStatus | null;
+  /**
+   * The email names a role, the matched app names a role, and they share no
+   * words — likely a second application at the same company, not an update.
+   */
+  titleMismatch?: boolean;
 }
 
 /** Below this length, containment is too loose ("meta" ⊂ "metabase"). */
@@ -23,6 +29,11 @@ function normalizeCompany(s: string): string {
     .replace(/\b(inc|incorporated|llc|ltd|limited|corp|corporation|co|gmbh|plc)\b/g, "")
     .replace(/[^a-z0-9]/g, "")
     .trim();
+}
+
+/** Whether two company names refer to the same employer (legal suffixes ignored). */
+export function isSameCompany(a: string, b: string): boolean {
+  return sameCompany(normalizeCompany(a), normalizeCompany(b));
 }
 
 function sameCompany(a: string, b: string): boolean {
@@ -53,6 +64,8 @@ function senderCompanyToken(fromEmail: string): string | null {
 }
 
 function titleWords(s: string): Set<string> {
+  // The placeholder says nothing about the role; it must never win or clash.
+  if (s === ROLE_PLACEHOLDER) return new Set();
   return new Set(s.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 3));
 }
 
@@ -81,8 +94,11 @@ export function matchApplication(
   // 1) The classified company name; 2) a direct-company sender domain.
   let hits = find(input.company ? normalizeCompany(input.company) : null);
   if (hits.length === 0) hits = find(senderCompanyToken(input.fromEmail));
-  if (hits.length === 0) return { applicationId: null, currentStatus: null };
+  if (hits.length === 0) return { applicationId: null, currentStatus: null, titleMismatch: false };
 
   const hit = pickByTitle(hits, input.title);
-  return { applicationId: hit.applicationId, currentStatus: hit.status };
+  const want = input.title ? titleWords(input.title) : new Set<string>();
+  const have = titleWords(hit.title);
+  const titleMismatch = want.size > 0 && have.size > 0 && ![...have].some((w) => want.has(w));
+  return { applicationId: hit.applicationId, currentStatus: hit.status, titleMismatch };
 }
