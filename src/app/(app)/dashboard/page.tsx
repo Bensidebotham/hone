@@ -40,6 +40,7 @@ export default async function Dashboard() {
         <div className="space-y-5">
           <SuggestedUpdates
             suggestions={summary.pendingSuggestions}
+            autoAdds={summary.recentAutoAdds}
             accountEmail={user.email}
           />
           <UpdatesFeed updates={summary.appUpdates} />
