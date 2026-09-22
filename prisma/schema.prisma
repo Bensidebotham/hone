@@ -129,6 +129,7 @@ enum EmailOutcome {
   suggested
   accepted
   dismissed
+  ignored
 }
 
 model ApplicationEvent {
