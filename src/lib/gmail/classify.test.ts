@@ -17,6 +17,27 @@ describe("buildClassifyPrompt", () => {
     expect(system).toMatch(/status/i);
     expect(system).toMatch(/confidence/i);
   });
+
+  it("tells the model what is NOT an application email", () => {
+    const { system } = buildClassifyPrompt({ from: "a@b.com", subject: "s", body: "b" });
+    expect(system).toMatch(/job ads/i);
+    expect(system).toMatch(/job-alert/i);
+    expect(system).toMatch(/LinkedIn/);
+    expect(system).toMatch(/cold outreach/i);
+  });
+
+  it("routes online assessments to interviewing and titles from the subject", () => {
+    const { system } = buildClassifyPrompt({ from: "a@b.com", subject: "s", body: "b" });
+    expect(system).toMatch(/assessment[^\n]*interviewing/i);
+    expect(system).toMatch(/title[^\n]*subject/i);
+  });
+
+  it("includes the received date when known", () => {
+    const { prompt } = buildClassifyPrompt({
+      from: "a@b.com", subject: "s", body: "b", receivedAt: new Date("2026-09-10T15:00:00Z"),
+    });
+    expect(prompt).toContain("Date: 2026-09-10");
+  });
 });
 
 describe("ClassificationSchema", () => {

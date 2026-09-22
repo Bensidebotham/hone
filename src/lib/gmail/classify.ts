@@ -17,25 +17,28 @@ export interface EmailForClassify {
   from: string;
   subject: string;
   body: string;
+  receivedAt?: Date;
 }
 
 export function buildClassifyPrompt(email: EmailForClassify): { system: string; prompt: string } {
   const system = [
-    "You classify a single job-search email into the applicant's application status.",
+    "You classify a single email about the recipient's own job applications.",
     'Return ONLY JSON: {"status","confidence","company","title","reason"}.',
     `status is one of: ${EMAIL_STATUSES.join(", ")}.`,
-    "- applied: confirmation that an application was received.",
-    "- interviewing: an interview invite, scheduling, recruiter screen, or assessment.",
+    "- applied: confirmation that an application the recipient submitted was received.",
+    "- interviewing: an interview invite or scheduling, a recruiter screen, or an online assessment / coding challenge invitation or reminder (CodeSignal, HackerRank, HireVue, etc.) — assessments count as interviewing.",
     "- offer: a job offer is extended.",
     "- rejected: the candidate is declined / not moving forward.",
-    "- none: not about the applicant's own application status (newsletter, job alert, marketing).",
-    "confidence is 0..1 (how sure you are of the status).",
-    "company and title: the hiring company and role if identifiable, else null.",
+    "- none: anything else. This includes job ads and \"position now available\" / \"we're hiring\" mail, job-alert digests and recommended-jobs mail, LinkedIn / Indeed / Handshake notifications, recruiter cold outreach about a role the recipient did not apply to, newsletters and marketing.",
+    "confidence is 0..1: how sure you are that this concerns an application the recipient actually submitted AND of the status.",
+    "company: the hiring company (not the ATS or assessment vendor), else null.",
+    "title: the role; take it from the subject line if the body does not name it; null only if neither does.",
     "reason: one short sentence of justification.",
   ].join("\n");
 
   const prompt = [
     `From: ${email.from}`,
+    ...(email.receivedAt ? [`Date: ${email.receivedAt.toISOString().slice(0, 10)}`] : []),
     `Subject: ${email.subject}`,
     "Body:",
     email.body.slice(0, 2000),
